@@ -46,6 +46,10 @@ def upload(directory):
 
     DIRECTORY: Directory to upload. Required.
     """
+    if not AWS_BUCKET:
+        print 'AWS_BUCKET environment variable not set. Exiting.'
+        return
+
     conn = S3Connection()
     bucket = get_or_create_bucket(conn, AWS_BUCKET)
 
