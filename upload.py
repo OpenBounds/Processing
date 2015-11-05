@@ -5,7 +5,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 import click
 
-import creds
+import config
 
 
 def get_or_create_bucket(conn, bucket_name):
@@ -46,8 +46,8 @@ def upload(directory):
 
     DIRECTORY: Directory to upload. Required.
     """
-    conn = S3Connection(creds.AWS_ACCESS_KEY_ID, creds.AWS_SECRET_ACCESS_KEY)
-    bucket = get_or_create_bucket(conn, creds.AWS_BUCKET)
+    conn = S3Connection()
+    bucket = get_or_create_bucket(conn, config.AWS_BUCKET)
 
     files = []
     total_size = 0
@@ -55,7 +55,7 @@ def upload(directory):
     for (dirpath, dirnames, filenames) in os.walk(directory):
         files.extend([f for f in filenames if not f[0] == '.'])
 
-    print 'Found', len(files), 'files to upload to s3://' + creds.AWS_BUCKET
+    print 'Found', len(files), 'files to upload to s3://' + config.AWS_BUCKET
 
     for path in files:
         full_path = os.path.join(directory, path)

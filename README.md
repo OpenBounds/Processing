@@ -32,7 +32,7 @@ Options:
 
 ### upload.py
 
-Upload a directory to S3:
+Upload a directory to S3. Requires environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to be set.
 
 ```
 $ python scripts/upload.py generated/
