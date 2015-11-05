@@ -29,3 +29,22 @@ validate.py [OPTIONS] SCHEMA JSONFILE
 Options:
   --help  Show this message and exit.
 ```
+
+### upload.py
+
+Upload a directory to S3:
+
+```
+$ python scripts/upload.py generated/
+```
+
+Usage:
+
+```
+Usage: upload.py [OPTIONS] DIRECTORY
+
+  DIRECTORY: Directory to upload. Required.
+
+Options:
+  --help  Show this message and exit.
+```
