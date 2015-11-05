@@ -3,6 +3,7 @@ import os
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
+from boto.exception import S3ResponseError
 import click
 
 AWS_BUCKET = os.environ.get('AWS_BUCKET')
@@ -17,7 +18,7 @@ def get_or_create_bucket(conn, bucket_name):
     """
     try:
         bucket = conn.get_bucket(bucket_name)
-    except ValueError:
+    except S3ResponseError:
         bucket = conn.create_bucket(bucket_name)
 
     return bucket
