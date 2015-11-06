@@ -1,6 +1,6 @@
 
 import os
-import json
+from urlparse import urlparse
 
 import click
 
@@ -9,27 +9,51 @@ import utils
 
 
 @click.command()
-@click.argument('source', type=click.Path(exists=True))
-@click.argument('output', type=click.Path(exists=True))
-def process(source, output):
-    for path in utils.get_files(source):
-        with open(path, 'r') as jsonfile:
-            source = json.loads(jsonfile.read())
+@click.argument('sources', type=click.Path(exists=True), required=True)
+@click.argument('output', type=click.Path(exists=True), required=True)
+@click.option('--force', is_flag=True)
+def process(sources, output, force):
+    """Download sources and process the file to the output directory.
 
-        if hasattr(adapters, source['filetype']):
-            geojson = getattr(adapters, source['filetype']).read(source['url'])
-        else:
-            print 'Unknown filetype', source['filetype']
+    \b
+    SOURCES: Source JSON file or directory of files. Required.
+    OUTPUT: Destination directory for generated data. Required.
+    """
+    for path in utils.get_files(sources):
+        pathparts = utils.get_path_parts(path)
+        pathparts[0] = output.strip(os.sep)
+        pathparts[-1] = pathparts[-1].replace('.json', '.geojson')
+
+        outdir = os.sep.join(pathparts[:-1])
+        outfile = os.sep.join(pathparts)
+
+        source = utils.read_json(path)
+
+        if not hasattr(adapters, source['filetype']):
+            utils.error('Unknown filetype', source['filetype'], '\n')
             continue
 
-        out = path.replace('.json', '.geojson').replace('sources', 'generated')
-        outdir, _ = os.path.split(out)
+        if os.path.isfile(outfile) and not force:
+            utils.error('Skipping', path, 'since generated file exists.',
+                        'Use --force to regenerate.', '\n')
+            continue
+
+        print 'Downloading', source['url']
+
+        try:
+            fp = utils.download(source['url'])
+        except IOError:
+            utils.error('Failed to download', source['url'], '\n')
+            continue
+
+        print 'Reading', urlparse(source['url']).path.split('/')[-1]
+
+        geojson = getattr(adapters, source['filetype']).read(fp)
 
         utils.make_sure_path_exists(outdir)
+        utils.write_json(outfile, geojson)
 
-        with open(out, 'w') as outfile:
-            dump = json.dumps(geojson, indent=4, separators=(',', ': '))
-            outfile.write(dump)
+        utils.success('Done. Processed to', outfile, '\n')
 
 
 if __name__ == '__main__':
