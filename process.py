@@ -39,7 +39,7 @@ def process(sources, output, force):
                         'Use --force to regenerate.', '\n')
             continue
 
-        print 'Downloading', source['url']
+        utils.info('Downloading', source['url'])
 
         try:
             fp = utils.download(source['url'])
@@ -47,7 +47,7 @@ def process(sources, output, force):
             utils.error('Failed to download', source['url'], '\n')
             continue
 
-        print 'Reading', urlfile
+        utils.info('Reading', urlfile)
 
         try:
             geojson = getattr(adapters, source['filetype']).read(fp)

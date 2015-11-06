@@ -1,13 +1,17 @@
 
 import os
 import json
+import logging
 import requests
 import tempfile
+import sys
 from urlparse import urlparse
 
 import click
 
 CHUNK_SIZE = 1024
+
+logging.basicConfig(level=logging.INFO)
 
 
 def get_files(path):
@@ -84,9 +88,22 @@ def download(url):
     return fp
 
 
+def info(*strings):
+    if sys.stdout.isatty():
+        click.echo(' '.join(strings))
+    else:
+        logging.info(' '.join(strings))
+
+
 def error(*strings):
-    click.secho(' '.join(strings), fg='red')
+    if sys.stdout.isatty():
+        click.secho(' '.join(strings), fg='red')
+    else:
+        logging.error(' '.join(strings))
 
 
 def success(*strings):
-    click.secho(' '.join(strings), fg='green')
+    if sys.stdout.isatty():
+        click.secho(' '.join(strings), fg='green')
+    else:
+        logging.info(' '.join(strings))
