@@ -28,6 +28,7 @@ def process(sources, output, force):
         outfile = os.sep.join(pathparts)
 
         source = utils.read_json(path)
+        urlfile = urlparse(source['url']).path.split('/')[-1]
 
         if not hasattr(adapters, source['filetype']):
             utils.error('Unknown filetype', source['filetype'], '\n')
@@ -46,9 +47,16 @@ def process(sources, output, force):
             utils.error('Failed to download', source['url'], '\n')
             continue
 
-        print 'Reading', urlparse(source['url']).path.split('/')[-1]
+        print 'Reading', urlfile
 
-        geojson = getattr(adapters, source['filetype']).read(fp)
+        try:
+            geojson = getattr(adapters, source['filetype']).read(fp)
+        except IOError:
+            utils.error('Failed to read', urlfile)
+            os.remove(fp.name)
+            continue
+
+        os.remove(fp.name)
 
         utils.make_sure_path_exists(outdir)
         utils.write_json(outfile, geojson)

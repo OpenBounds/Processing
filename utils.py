@@ -71,10 +71,12 @@ def download(url):
     if not res.ok:
         raise IOError
 
-    fp = tempfile.TemporaryFile()
+    fp = tempfile.NamedTemporaryFile('wb', suffix='.zip', delete=False)
 
     for chunk in res.iter_content(CHUNK_SIZE):
         fp.write(chunk)
+
+    fp.close()
 
     return fp
 
