@@ -53,10 +53,9 @@ def process(sources, output, force):
             geojson = getattr(adapters, source['filetype']).read(fp)
         except IOError:
             utils.error('Failed to read', urlfile)
-            os.remove(fp.name)
             continue
-
-        os.remove(fp.name)
+        finally:
+            os.remove(fp.name)
 
         utils.make_sure_path_exists(outdir)
         utils.write_json(outfile, geojson)
