@@ -3,6 +3,7 @@ import os
 import json
 import requests
 import tempfile
+from urlparse import urlparse
 
 import click
 
@@ -67,11 +68,13 @@ def download(url):
     :param url: string
     """
     res = requests.get(url, stream=True, verify=False)
+    urlfile = urlparse(url).path.split('/')[-1]
+    _, extension = os.path.split(urlfile)
 
     if not res.ok:
         raise IOError
 
-    fp = tempfile.NamedTemporaryFile('wb', suffix='.zip', delete=False)
+    fp = tempfile.NamedTemporaryFile('wb', suffix=extension, delete=False)
 
     for chunk in res.iter_content(CHUNK_SIZE):
         fp.write(chunk)
