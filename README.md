@@ -29,3 +29,22 @@ validate.py [OPTIONS] SCHEMA JSONFILE
 Options:
   --help  Show this message and exit.
 ```
+
+### upload.py
+
+Upload a directory to S3. Requires environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_BUCKET` to be set.
+
+```
+$ python scripts/upload.py generated/
+```
+
+Usage:
+
+```
+Usage: upload.py [OPTIONS] DIRECTORY
+
+  DIRECTORY: Directory to upload. Required.
+
+Options:
+  --help  Show this message and exit.
+```
