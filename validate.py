@@ -1,5 +1,6 @@
 
 import json
+import re
 
 import click
 import jsonschema
@@ -20,6 +21,11 @@ def validate(schema, jsonfiles):
     schema = json.loads(schema.read())
 
     for path in utils.get_files(jsonfiles):
+        regex = r'sources/[A-Z]{2}/[A-Z]{2}/[a-z-]+.json'
+
+        if not re.compile(regex).match(path):
+            raise AssertionError('Source path does not match spec for ' + path)
+
         with open(path) as f:
             jsonfile = json.loads(f.read())
 
