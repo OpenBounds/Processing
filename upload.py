@@ -6,6 +6,8 @@ from boto.s3.key import Key
 from boto.exception import S3ResponseError
 import click
 
+import utils
+
 AWS_BUCKET = os.environ.get('AWS_BUCKET')
 
 
@@ -48,7 +50,7 @@ def upload(directory):
     DIRECTORY: Directory to upload. Required.
     """
     if not AWS_BUCKET:
-        print 'AWS_BUCKET environment variable not set. Exiting.'
+        utils.error('AWS_BUCKET environment variable not set. Exiting.')
         return
 
     conn = S3Connection()
@@ -60,20 +62,20 @@ def upload(directory):
     for (dirpath, dirnames, filenames) in os.walk(directory):
         files.extend([f for f in filenames if not f[0] == '.'])
 
-    print 'Found', len(files), 'files to upload to s3://' + AWS_BUCKET
+    utils.info('Found', len(files), 'files to upload to s3://' + AWS_BUCKET)
 
     for path in files:
         full_path = os.path.join(directory, path)
         filesize = os.path.getsize(full_path)
         total_size += filesize
 
-        print 'Uploading', path, '-', sizeof_fmt(filesize)
+        utils.info('Uploading', path, '-', sizeof_fmt(filesize))
 
         k = Key(bucket)
         k.key = path
         k.set_contents_from_filename(full_path)
 
-    print 'Done. Uploaded', sizeof_fmt(total_size)
+    utils.success('Done. Uploaded', sizeof_fmt(total_size))
 
 
 if __name__ == '__main__':
