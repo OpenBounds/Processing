@@ -2,12 +2,12 @@
 import os
 import json
 import logging
-import requests
 import tempfile
 import sys
 from urlparse import urlparse
 
 import click
+import requests
 
 CHUNK_SIZE = 1024
 
