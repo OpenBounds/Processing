@@ -50,7 +50,7 @@ def process(sources, output, force):
         utils.info('Reading', urlfile)
 
         try:
-            geojson = getattr(adapters, source['filetype']).read(fp)
+            geojson = getattr(adapters, source['filetype']).read(fp, source['properties'])
         except IOError:
             utils.error('Failed to read', urlfile)
             continue

@@ -33,7 +33,7 @@ def _transformer(crs, feat):
     return feat
 
 
-def read(fp):
+def read(fp, prop_map):
     """Read shapefile.
 
     :param fp: file-like object
@@ -54,6 +54,10 @@ def read(fp):
 
         for rec in source:
             transformed = _transformer(source.crs, rec)
+            transformed['properties'] = {
+                key: str(transformed['properties'][value])
+                for key, value in prop_map.iteritems()
+            }
             collection['bbox'] = [
                 comparator(values)
                 for comparator, values in zip(
