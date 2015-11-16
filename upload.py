@@ -43,7 +43,7 @@ def sizeof_fmt(num):
 
 
 @click.command()
-@click.argument('directory', type=click.Path(exists=True))
+@click.argument('directory', type=click.Path(exists=True), required=True)
 def upload(directory):
     """Upload a directory to S3.
 
@@ -56,24 +56,20 @@ def upload(directory):
     conn = S3Connection()
     bucket = get_or_create_bucket(conn, AWS_BUCKET)
 
-    files = []
+    files = list(utils.get_files(directory))
     total_size = 0
-
-    for (dirpath, dirnames, filenames) in os.walk(directory):
-        files.extend([f for f in filenames if not f[0] == '.'])
 
     utils.info('Found', len(files), 'files to upload to s3://' + AWS_BUCKET)
 
     for path in files:
-        full_path = os.path.join(directory, path)
-        filesize = os.path.getsize(full_path)
+        filesize = os.path.getsize(path)
         total_size += filesize
 
         utils.info('Uploading', path, '-', sizeof_fmt(filesize))
 
         k = Key(bucket)
         k.key = path
-        k.set_contents_from_filename(full_path)
+        k.set_contents_from_filename(path)
 
     utils.success('Done. Uploaded', sizeof_fmt(total_size))
 
