@@ -21,10 +21,15 @@ def validate(schema, jsonfiles):
     schema = json.loads(schema.read())
 
     for path in utils.get_files(jsonfiles):
-        regex = r'(sources|generated)/[A-Z]{2}/[A-Z]{2}/[a-z-]+.(geo)?json'
+        if path.startswith('sources'):
+            regex = r'sources/[A-Z]{2}/[A-Z]{2}/[a-z-]+.json'
+        elif path.startswith('generated'):
+            regex = r'generated/[A-Z]{2}/[A-Z]{2}/[a-z-]+.geojson'
+        else:
+            regex = r''
 
         if not re.compile(regex).match(path):
-            raise AssertionError('Source path does not match spec for ' + path)
+            raise AssertionError('Path does not match spec for ' + path)
 
         with open(path) as f:
             jsonfile = json.loads(f.read())
