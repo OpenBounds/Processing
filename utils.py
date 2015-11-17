@@ -1,6 +1,6 @@
 
 import os
-import json
+import ujson
 import logging
 import tempfile
 import sys
@@ -37,12 +37,12 @@ def read_json(path):
     :returns: dict
     """
     with open(path, 'r') as jsonfile:
-        return json.loads(jsonfile.read())
+        return ujson.loads(jsonfile.read())
 
 
 def write_json(path, data):
     with open(path, 'w') as jsonfile:
-        jsonfile.write(json.dumps(data, indent=4, separators=(',', ': ')))
+        jsonfile.write(ujson.dumps(data, double_precision=5))
 
 
 def make_sure_path_exists(path):
