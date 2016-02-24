@@ -5,6 +5,9 @@ import logging
 import tempfile
 import sys
 from urlparse import urlparse
+import shutil
+import urllib2
+from contextlib import closing
 
 import click
 import requests
@@ -71,17 +74,24 @@ def download(url):
 
     :param url: string
     """
-    res = requests.get(url, stream=True, verify=False)
-    urlfile = urlparse(url).path.split('/')[-1]
-    _, extension = os.path.split(urlfile)
+    parsed_url = urlparse(url)
 
-    if not res.ok:
-        raise IOError
+    urlfile = parsed_url.path.split('/')[-1]
+    _, extension = os.path.split(urlfile)
 
     fp = tempfile.NamedTemporaryFile('wb', suffix=extension, delete=False)
 
-    for chunk in res.iter_content(CHUNK_SIZE):
-        fp.write(chunk)
+    if parsed_url.scheme == "http" or parsed_url.scheme == "https":
+        res = requests.get(url, stream=True, verify=False)
+
+        if not res.ok:
+            raise IOError
+
+        for chunk in res.iter_content(CHUNK_SIZE):
+            fp.write(chunk)
+    elif parsed_url.scheme == "ftp":
+        with closing(urllib2.urlopen(url)) as r:
+            shutil.copyfileobj(r, fp)
 
     fp.close()
 
