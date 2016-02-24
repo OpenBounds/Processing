@@ -1,5 +1,8 @@
-
 from functools import partial
+import zipfile
+import os
+import tempfile
+import shutil
 
 import fiona
 from fiona.transform import transform_geom
@@ -38,14 +41,24 @@ def read(fp, prop_map):
 
     :param fp: file-like object
     """
-    layers = fiona.listlayers('/', vfs='zip://' + fp.name)
+    #search for a shapefile in the zip file, unzip if found
+    unzip_dir = tempfile.mkdtemp()
+    shp_name = None
+    with zipfile.ZipFile(fp.name, 'r') as zipped_file:
+        for name in zipped_file.namelist():
+            base, ext = os.path.splitext(name)
+            if ext == ".shp":
+                if shp_name is not None:
+                    raise Exception("Found multiple shapefiles in zipfile")
+                shp_name = name
 
-    if not layers:
-        raise IOError
+        if shp_name is None:
+            raise Exception("Found 0 shapefiles in zipfile")
 
-    filename = '/' + layers[0] + '.shp'
+        zipped_file.extractall(unzip_dir)
 
-    with fiona.open(filename, vfs='zip://' + fp.name) as source:
+    #Open the shapefile
+    with fiona.open(os.path.join(unzip_dir, shp_name)) as source:
         collection = {
             'type': 'FeatureCollection',
             'features': [],
@@ -66,6 +79,8 @@ def read(fp, prop_map):
                 )
             ]
             collection['features'].append(transformed)
+
+    shutil.rmtree(unzip_dir)
 
     return collection
 
