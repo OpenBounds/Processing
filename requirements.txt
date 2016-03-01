@@ -1,0 +1,4 @@
+-r requirements-validate.txt
+
+boto==2.38.0
+Fiona==1.6.2
