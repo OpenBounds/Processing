@@ -4,6 +4,8 @@ import os
 import tempfile
 import shutil
 
+from property_transformation import get_transformed_properties
+
 import fiona
 from fiona.transform import transform_geom
 
@@ -70,10 +72,8 @@ def read(fp, prop_map, source_filename=None):
 
         for rec in source:
             transformed = _transformer(source.crs, rec)
-            transformed['properties'] = {
-                key: str(transformed['properties'][value])
-                for key, value in prop_map.iteritems()
-            }
+            transformed['properties'] = get_transformed_properties(
+                transformed['properties'], prop_map)
             collection['bbox'] = [
                 comparator(values)
                 for comparator, values in zip(
