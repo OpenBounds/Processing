@@ -15,6 +15,10 @@ def get_transformed_properties(source_properties, prop_map):
         elif type(value) == dict:
             if "static" in value:
                 results[key] = value["static"]
+            else:
+                raise PropertyMappingFailedException(
+                    "Failed to find key for mapping in dict for field:%s" % 
+                    (key,))
         else:
             raise PropertyMappingFailedException("Unhandled mapping for key:%s value type:%s" % 
                 (key, type(value)))
