@@ -6,7 +6,7 @@ import click
 
 import adapters
 import utils
-
+from filters import BasicFilterer
 
 @click.command()
 @click.argument('sources', type=click.Path(exists=True), required=True)
@@ -49,9 +49,16 @@ def process(sources, output, force):
 
         utils.info('Reading', urlfile)
 
+        if 'filter' in source:
+            filterer = BasicFilterer(source['filter'])
+        else:
+            filterer = None
+
         try:
             geojson = getattr(adapters, source['filetype'])\
-                .read(fp, source['properties'], source_filename=source.get("filenameInZip", None))
+                .read(fp, source['properties'],
+                    filterer=filterer,
+                    source_filename=source.get("filenameInZip", None))
         except IOError:
             utils.error('Failed to read', urlfile)
             continue

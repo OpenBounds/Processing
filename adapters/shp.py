@@ -38,7 +38,7 @@ def _transformer(crs, feat):
     return feat
 
 
-def read(fp, prop_map, source_filename=None):
+def read(fp, prop_map, filterer=None, source_filename=None):
     """Read shapefile.
 
     :param fp: file-like object
@@ -72,6 +72,10 @@ def read(fp, prop_map, source_filename=None):
 
         for rec in source:
             transformed = _transformer(source.crs, rec)
+            if filterer is not None and not filterer.keep(transformed):
+                print "Skipping feature"
+                continue
+
             transformed['properties'] = get_transformed_properties(
                 transformed['properties'], prop_map)
             collection['bbox'] = [
