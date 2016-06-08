@@ -58,6 +58,12 @@ def process(sources, output, force):
         finally:
             os.remove(fp.name)
 
+        excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
+        properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
+        properties['source_url'] = source['url']
+
+        geojson['properties'] = properties
+
         utils.make_sure_path_exists(outdir)
         utils.write_json(outfile, geojson)
 
