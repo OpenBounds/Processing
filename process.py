@@ -58,15 +58,9 @@ def process(sources, output, force):
         finally:
             os.remove(fp.name)
 
-        properties = source
-        del properties['filetype']
-        properties['source_url'] = properties['url']
-        del properties['url']
-        del properties['properties']
-        if 'filter' in properties:
-            del properties['filter']
-        if 'filenameInZip' in properties:
-            del properties['filenameInZip']
+        excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
+        properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
+        properties['source_url'] = source['url']
 
         geojson['properties'] = properties
 
