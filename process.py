@@ -58,6 +58,18 @@ def process(sources, output, force):
         finally:
             os.remove(fp.name)
 
+        properties = source
+        del properties['filetype']
+        properties['source_url'] = properties['url']
+        del properties['url']
+        del properties['properties']
+        if 'filter' in properties:
+            del properties['filter']
+        if 'filenameInZip' in properties:
+            del properties['filenameInZip']
+
+        geojson['properties'] = properties
+
         utils.make_sure_path_exists(outdir)
         utils.write_json(outfile, geojson)
 
