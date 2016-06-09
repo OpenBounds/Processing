@@ -1,6 +1,7 @@
 
 import os
 from urlparse import urlparse
+import zipfile 
 
 import click
 
@@ -62,6 +63,9 @@ def process(sources, output, force):
                     source_filename=source.get("filenameInZip", None))
         except IOError:
             utils.error('Failed to read', urlfile)
+            continue
+        except zipfile.BadZipfile, e:
+            utils.error('Unable to open zip file', source['url'])
             continue
         finally:
             os.remove(fp.name)
