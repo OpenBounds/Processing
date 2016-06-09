@@ -22,6 +22,7 @@ def process(sources, output, force):
     OUTPUT: Destination directory for generated data. Required.
     """
     catalog_features = []
+    base_output_path_parts = utils.get_path_parts(output)
     for path in utils.get_files(sources):
         pathparts = utils.get_path_parts(path)
         pathparts[0] = output.strip(os.sep)
@@ -84,7 +85,7 @@ def process(sources, output, force):
     
             utils.success('Done. Processed to', outfile, '\n')
 
-        properties['path'] = outfile
+        properties['path'] = "/".join(pathparts[len(base_output_path_parts):])
         catalog_entry = {
             'type': 'Feature',
             'properties': properties,
