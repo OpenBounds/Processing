@@ -97,6 +97,20 @@ def download(url):
 
     return fp
 
+def polygon_from_bbox(bbox):
+    """ Generate a polygon geometry from a ESWN bouding box
+
+    :param bbox: a 4 float bounding box
+    :returns: a polygon geometry
+    """
+    return [[
+        [bbox[0], bbox[1]],
+        [bbox[2], bbox[1]],
+        [bbox[2], bbox[3]],
+        [bbox[0], bbox[3]],
+        [bbox[0], bbox[1]]
+    ]]
+
 
 def info(*strings):
     if sys.stdout.isatty():
