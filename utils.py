@@ -9,6 +9,8 @@ import shutil
 import urllib2
 from contextlib import closing
 
+import hashlib
+
 import click
 import requests
 
@@ -81,6 +83,17 @@ def download(url):
 
     fp = tempfile.NamedTemporaryFile('wb', suffix=extension, delete=False)
 
+    download_cache = os.getenv("DOWNLOAD_CACHE")
+    cache_path = None
+    if download_cache is not None:
+        cache_path = os.path.join(download_cache,
+            hashlib.sha224(url).hexdigest())
+        if os.path.exists(cache_path):
+            info("Returning %s from cache" % url)
+            fp.close()
+            shutil.copy(cache_path, fp.name)
+            return fp
+
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
         res = requests.get(url, stream=True, verify=False)
 
@@ -94,6 +107,11 @@ def download(url):
             shutil.copyfileobj(r, fp)
 
     fp.close()
+
+    if cache_path:
+        if not os.path.exists(download_cache):
+            os.makedirs(download_cache)
+        shutil.copy(fp.name, cache_path)
 
     return fp
 
