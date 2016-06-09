@@ -19,6 +19,7 @@ def process(sources, output, force):
     SOURCES: Source JSON file or directory of files. Required.
     OUTPUT: Destination directory for generated data. Required.
     """
+    catalog_features = []
     for path in utils.get_files(sources):
         pathparts = utils.get_path_parts(path)
         pathparts[0] = output.strip(os.sep)
@@ -74,8 +75,24 @@ def process(sources, output, force):
         utils.make_sure_path_exists(outdir)
         utils.write_json(outfile, geojson)
 
+        properties['path'] = outfile
+        catalog_entry = {
+            'type': 'Feature',
+            'properties': properties,
+            'geometry': {
+                'type': 'Polygon',
+                'coordinates': utils.polygon_from_bbox(geojson['bbox'])
+            }
+        }
+        catalog_features.append(catalog_entry)
+
         utils.success('Done. Processed to', outfile, '\n')
 
+    catalog = {
+        'type': 'FeatureCollection',
+        'features': catalog_features
+    }
+    utils.write_json(os.path.join(output,'catalog.geojson'), catalog)
 
 if __name__ == '__main__':
     process()
