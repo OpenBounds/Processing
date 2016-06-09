@@ -2,6 +2,7 @@
 import os
 from urlparse import urlparse
 import zipfile 
+import json
 
 import click
 
@@ -39,45 +40,49 @@ def process(sources, output, force):
         if os.path.isfile(outfile) and not force:
             utils.error('Skipping', path, 'since generated file exists.',
                         'Use --force to regenerate.', '\n')
-            continue
-
-        utils.info('Downloading', source['url'])
-
-        try:
-            fp = utils.download(source['url'])
-        except IOError:
-            utils.error('Failed to download', source['url'], '\n')
-            continue
-
-        utils.info('Reading', urlfile)
-
-        if 'filter' in source:
-            filterer = BasicFilterer(source['filter'], source.get('filter_operator', 'and'))
+            with open(outfile, "rb") as f:
+                geojson = json.load(f)
+            properties = geojson['properties']
         else:
-            filterer = None
+            utils.info('Downloading', source['url'])
 
-        try:
-            geojson = getattr(adapters, source['filetype'])\
-                .read(fp, source['properties'],
-                    filterer=filterer,
-                    source_filename=source.get("filenameInZip", None))
-        except IOError:
-            utils.error('Failed to read', urlfile)
-            continue
-        except zipfile.BadZipfile, e:
-            utils.error('Unable to open zip file', source['url'])
-            continue
-        finally:
-            os.remove(fp.name)
+            try:
+                fp = utils.download(source['url'])
+            except IOError:
+                utils.error('Failed to download', source['url'], '\n')
+                continue
 
-        excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
-        properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
-        properties['source_url'] = source['url']
+            utils.info('Reading', urlfile)
 
-        geojson['properties'] = properties
+            if 'filter' in source:
+                filterer = BasicFilterer(source['filter'], source.get('filter_operator', 'and'))
+            else:
+                filterer = None
 
-        utils.make_sure_path_exists(outdir)
-        utils.write_json(outfile, geojson)
+            try:
+                geojson = getattr(adapters, source['filetype'])\
+                    .read(fp, source['properties'],
+                        filterer=filterer,
+                        source_filename=source.get("filenameInZip", None))
+            except IOError:
+                utils.error('Failed to read', urlfile)
+                continue
+            except zipfile.BadZipfile, e:
+                utils.error('Unable to open zip file', source['url'])
+                continue
+            finally:
+                os.remove(fp.name)
+
+            excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
+            properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
+            properties['source_url'] = source['url']
+
+            geojson['properties'] = properties
+
+            utils.make_sure_path_exists(outdir)
+            utils.write_json(outfile, geojson)
+    
+            utils.success('Done. Processed to', outfile, '\n')
 
         properties['path'] = outfile
         catalog_entry = {
@@ -90,7 +95,6 @@ def process(sources, output, force):
         }
         catalog_features.append(catalog_entry)
 
-        utils.success('Done. Processed to', outfile, '\n')
 
     catalog = {
         'type': 'FeatureCollection',
