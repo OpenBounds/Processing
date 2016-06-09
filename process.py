@@ -1,14 +1,14 @@
 
+import json
 import os
 from urlparse import urlparse
 import zipfile 
-import json
 
 import click
 
 import adapters
-import utils
 from filters import BasicFilterer
+import utils
 
 @click.command()
 @click.argument('sources', type=click.Path(exists=True), required=True)
@@ -22,7 +22,7 @@ def process(sources, output, force):
     OUTPUT: Destination directory for generated data. Required.
     """
     catalog_features = []
-    base_output_path_parts = utils.get_path_parts(output)
+    path_parts_to_skip = len(utils.get_path_parts(output))
     for path in utils.get_files(sources):
         pathparts = utils.get_path_parts(path)
         pathparts[0] = output.strip(os.sep)
@@ -85,7 +85,7 @@ def process(sources, output, force):
     
             utils.success('Done. Processed to', outfile, '\n')
 
-        properties['path'] = "/".join(pathparts[len(base_output_path_parts):])
+        properties['path'] = "/".join(pathparts[path_parts_to_skip:])
         catalog_entry = {
             'type': 'Feature',
             'properties': properties,
