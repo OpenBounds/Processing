@@ -30,6 +30,7 @@ class BasicFilterer(object):
                     feature['properties'][item['key']] != item['value']
             elif item['expression'] == "match":
                 test_success = item['key'] in feature['properties'] and \
+                    feature['properties'][item['key']] is not None and \
                     re.match(item['value'], feature['properties'][item['key']])
             else:
                 raise FilteringFailedException("Unhandled filtering expression:%s" % 

@@ -64,6 +64,7 @@ def process(sources, output, force):
                 geojson = getattr(adapters, source['filetype'])\
                     .read(fp, source['properties'],
                         filterer=filterer,
+                        layer_name=source.get("layerName", None),
                         source_filename=source.get("filenameInZip", None))
             except IOError:
                 utils.error('Failed to read', urlfile)
