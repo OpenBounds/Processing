@@ -56,7 +56,7 @@ def process(sources, output, force):
             utils.info('Reading', urlfile)
 
             if 'filter' in source:
-                filterer = BasicFilterer(source['filter'], source.get('filter_operator', 'and'))
+                filterer = BasicFilterer(source['filter'], source.get('filterOperator', 'and'))
             else:
                 filterer = None
 
