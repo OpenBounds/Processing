@@ -77,7 +77,8 @@ def process(sources, output, force):
             excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
             properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
             properties['source_url'] = source['url']
-
+            properties['feature_count'] = len(geojson['features'])
+            
             geojson['properties'] = properties
 
             utils.make_sure_path_exists(outdir)
