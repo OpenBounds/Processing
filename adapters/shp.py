@@ -6,6 +6,7 @@ import shutil
 from property_transformation import get_transformed_properties
 
 import fiona
+import fiona_dataset
 
 
 def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
