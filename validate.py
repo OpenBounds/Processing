@@ -22,8 +22,11 @@ def validate(schema, jsonfiles):
 
     for path in utils.get_files(jsonfiles):
         with open(path) as f:
-            jsonfile = json.loads(f.read())
-
+            try:
+                jsonfile = json.loads(f.read())
+            except ValueError:
+                utils.error("Error loading json file " + path)
+                raise Exception("Invalid json file")
         jsonschema.validate(jsonfile, schema)
 
 

@@ -66,8 +66,8 @@ def process(sources, output, force):
                         filterer=filterer,
                         layer_name=source.get("layerName", None),
                         source_filename=source.get("filenameInZip", None))
-            except IOError:
-                utils.error('Failed to read', urlfile)
+            except IOError, e:
+                utils.error('Failed to read', urlfile, str(e))
                 continue
             except zipfile.BadZipfile, e:
                 utils.error('Unable to open zip file', source['url'])
