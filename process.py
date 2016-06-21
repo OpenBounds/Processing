@@ -74,7 +74,9 @@ def process(sources, output, force):
                 continue
             finally:
                 os.remove(fp.name)
-
+            if(len(geojson['features'])) == 0:
+                utils.error("Result contained no features for " + path)
+                continue
             excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
             properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
             properties['source_url'] = source['url']

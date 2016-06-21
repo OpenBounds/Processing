@@ -57,5 +57,7 @@ def read_fiona(source, prop_map, filterer=None):
             )
         ]
         collection['features'].append(transformed)
+    if len(collection['features']) == 0:
+        del collection['bbox']
 
     return collection
