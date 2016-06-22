@@ -34,7 +34,6 @@ def vectorTiling(file):
     command = 'tippecanoe -f -o ' + 'result.mbtiles ' + paths_string + ' -z {} -Z {}'.format(max_zoom, min_zoom)
     subprocess.call(command,shell=True)
 
-
 if __name__ == '__main__':
 
     vectorTiling()
