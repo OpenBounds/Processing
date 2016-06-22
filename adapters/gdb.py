@@ -2,6 +2,7 @@ import zipfile
 import os
 import tempfile
 import shutil
+from utils import get_compressed_file_wrapper
 
 
 import fiona
@@ -16,23 +17,26 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
     """
     #search for a shapefile in the zip file, unzip if found
     unzip_dir = tempfile.mkdtemp(suffix=".gdb")
-    with zipfile.ZipFile(fp.name, 'r') as zipped_file:
-        zipped_file.extractall(unzip_dir)
-        
-        if source_filename is None:
-           for name in zipped_file.infolist():
-                dirname = os.path.dirname(name.filename)
-                base, ext = os.path.splitext(dirname)
-                if ext == ".gdb":
-                    if source_filename is not None and source_filename != dirname:
-                        raise Exception("Found multiple .gdb entries in zipfile")
-                    source_filename = dirname
+    gdb_name = source_filename
+    zipped_file = get_compressed_file_wrapper(fp.name)
 
-        if source_filename is None:
+    if gdb_name is None:
+        for name in zipped_file.infolist():
+            dirname = os.path.dirname(name.filename)
+            base, ext = os.path.splitext(dirname)
+            if ext == ".gdb":
+                if gdb_name is not None and gdb_name != dirname:
+                    raise Exception("Found multiple .gdb entries in zipfile")
+                gdb_name = dirname
+
+        if gdb_name is None:
             raise Exception("Unabled to find .gdb directory in zipfile, and filenameInZip not set")
 
+    zipped_file.extractall(unzip_dir)
+    zipped_file.close()
+
     #Open the shapefile
-    with fiona.open(os.path.join(unzip_dir, source_filename), layer=layer_name) as source:
+    with fiona.open(os.path.join(unzip_dir, gdb_name), layer=layer_name) as source:
         collection = fiona_dataset.read_fiona(source, prop_map, filterer)
 
     shutil.rmtree(unzip_dir)

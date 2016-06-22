@@ -4,7 +4,7 @@ import fiona
 from fiona.transform import transform_geom
 
 from property_transformation import get_transformed_properties
-
+import utils
 
 def _explode(coords):
     """Explode a GeoJSON geometry's coordinates object and
@@ -41,11 +41,11 @@ def read_fiona(source, prop_map, filterer=None):
         'features': [],
         'bbox': [float('inf'), float('inf'), float('-inf'), float('-inf')]
     }
-
+    skipped_count = 0
     for rec in source:
         transformed = _transformer(source.crs, rec)
         if filterer is not None and not filterer.keep(transformed):
-            print "Skipping feature"
+            skipped_count += 1
             continue
         transformed['properties'] = get_transformed_properties(
             transformed['properties'], prop_map)
@@ -57,7 +57,12 @@ def read_fiona(source, prop_map, filterer=None):
             )
         ]
         collection['features'].append(transformed)
+
+    #avoid math error if there are no features
     if len(collection['features']) == 0:
         del collection['bbox']
+
+    utils.info("skipped %i features, kept %i features" % 
+        (skipped_count, len(collection['features'])))
 
     return collection
