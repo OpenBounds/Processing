@@ -43,7 +43,9 @@ def translate_to_geojson(shp, folder):
 def tiling(file): 
     """ Use of Tippecanoe 
     """
-    command = 'tippecanoe -o ' + file + '.mbtiles ' + file + '.geojson'
+    z = 14 
+    Z = 0 
+    command = 'tippecanoe -o ' + file + '.mbtiles ' + file + '.geojson' #Default zoom 0 to 14 
     subprocess.call(command,shell=True)
 
 def cleaning(folder): 
@@ -70,7 +72,7 @@ def vectorTiling(source):
     translate_to_geojson(name, folder)
 
     tiling(folder + '/' + name)
-    
+
     cleaning(folder)
 
 
