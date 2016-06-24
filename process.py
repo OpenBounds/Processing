@@ -24,6 +24,7 @@ def process(sources, output, force):
     catalog_features = []
     path_parts_to_skip = len(utils.get_path_parts(output))
     for path in utils.get_files(sources):
+        utils.info("Processing " + path)
         pathparts = utils.get_path_parts(path)
         pathparts[0] = output.strip(os.sep)
         pathparts[-1] = pathparts[-1].replace('.json', '.geojson')

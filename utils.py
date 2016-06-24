@@ -164,13 +164,37 @@ class ZipCompatibleTarFile(tarfile.TarFile):
     def namelist(self):
         return self.getnames()
 
+ARCHIVE_FORMAT_ZIP = "zip"
+ARCHIVE_FORMAT_TAR_GZ = "tar.gz"
+ARCHIVE_FORMAT_TAR_BZ2 = "tar.bz2"
 
 def get_compressed_file_wrapper(path):
+    archive_format = None
+
     if path.endswith(".zip"):
-        return zipfile.ZipFile(path, 'r')
+        archive_format = ARCHIVE_FORMAT_ZIP
     elif path.endswith(".tar.gz") or path.endswith(".tgz"):
-        return ZipCompatibleTarFile.open(path, 'r:gz')
+        archive_format = ARCHIVE_FORMAT_TAR_GZ
     elif path.endswith(".tar.bz2"):
-        return ZipCompatibleTarFile.open(path, 'r:bz2')
+        archive_format = ARCHIVE_FORMAT_TAR_BZ2
     else:
-        raise Exception("Unsupported archive format")
+        try:
+            with zipfile.ZipFile(path, "r") as f:
+                archive_format = ARCHIVE_FORMAT_ZIP
+        except:
+            try:
+                f = tarfile.TarFile.open(path, "r")
+                f.close()
+                archive_format = ARCHIVE_FORMAT_ZIP
+            except:
+                pass
+
+    if archive_format is None:
+        raise Exception("Unable to determine archive format")
+
+    if archive_format == ARCHIVE_FORMAT_ZIP:
+        return zipfile.ZipFile(path, 'r')
+    elif archive_format == ARCHIVE_FORMAT_TAR_GZ:
+        return ZipCompatibleTarFile.open(path, 'r:gz')
+    elif archive_format == ARCHIVE_FORMAT_TAR_BZ2:
+        return ZipCompatibleTarFile.open(path, 'r:bz2')
