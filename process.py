@@ -39,7 +39,8 @@ def process(sources, output, force):
             utils.error('Unknown filetype', source['filetype'], '\n')
             continue
 
-        if os.path.isfile(outfile) and not force:
+        if os.path.isfile(outfile) and \
+            os.path.getmtime(outfile) > os.path.getmtime(path) and not force:
             utils.error('Skipping', path, 'since generated file exists.',
                         'Use --force to regenerate.', '\n')
             with open(outfile, "rb") as f:
