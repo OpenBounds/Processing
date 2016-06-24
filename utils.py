@@ -8,6 +8,8 @@ from urlparse import urlparse
 import shutil
 import urllib2
 from contextlib import closing
+import zipfile
+import tarfile
 
 import hashlib
 
@@ -149,3 +151,26 @@ def success(*strings):
         click.secho(' '.join(strings), fg='green')
     else:
         logging.info(' '.join(strings))
+
+
+class ZipCompatibleTarFile(tarfile.TarFile):
+    """Wrapper around TarFile to make it more compatible with ZipFile"""
+    def infolist(self):
+        members = self.getmembers()
+        for m in members:
+            m.filename = m.name
+        return members
+
+    def namelist(self):
+        return self.getnames()
+
+
+def get_compressed_file_wrapper(path):
+    if path.endswith(".zip"):
+        return zipfile.ZipFile(path, 'r')
+    elif path.endswith(".tar.gz") or path.endswith(".tgz"):
+        return ZipCompatibleTarFile.open(path, 'r:gz')
+    elif path.endswith(".tar.bz2"):
+        return ZipCompatibleTarFile.open(path, 'r:bz2')
+    else:
+        raise Exception("Unsupported archive format")

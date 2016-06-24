@@ -1,9 +1,9 @@
-import zipfile
 import os
 import tempfile
 import shutil
 
 from property_transformation import get_transformed_properties
+from utils import get_compressed_file_wrapper
 
 import fiona
 import fiona_dataset
@@ -19,19 +19,21 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
     #search for a shapefile in the zip file, unzip if found
     unzip_dir = tempfile.mkdtemp()
     shp_name = source_filename
-    with zipfile.ZipFile(fp.name, 'r') as zipped_file:
+    zipped_file = get_compressed_file_wrapper(fp.name)
+
+    if shp_name is None:
+        for name in zipped_file.infolist():
+            base, ext = os.path.splitext(name.filename)
+            if ext == ".shp":
+                if shp_name is not None:
+                    raise Exception("Found multiple shapefiles in zipfile")
+                shp_name = name.filename
+
         if shp_name is None:
-            for name in zipped_file.namelist():
-                base, ext = os.path.splitext(name)
-                if ext == ".shp":
-                    if shp_name is not None:
-                        raise Exception("Found multiple shapefiles in zipfile")
-                    shp_name = name
+            raise Exception("Found 0 shapefiles in zipfile")
 
-            if shp_name is None:
-                raise Exception("Found 0 shapefiles in zipfile")
-
-        zipped_file.extractall(unzip_dir)
+    zipped_file.extractall(unzip_dir)
+    zipped_file.close()
 
     #Open the shapefile
     with fiona.open(os.path.join(unzip_dir, shp_name)) as source:
