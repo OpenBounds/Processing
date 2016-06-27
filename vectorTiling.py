@@ -40,7 +40,8 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
         source_paths = []
         for arg in sources:
             for item in utils.get_files(arg):
-                if os.path.splitext(item)[1] == '.geojson':
+                if os.path.splitext(item)[1] == '.geojson' and \
+                  os.path.basename(item) != 'catalog.geojson':
                     source_paths.append(item)
 
     utils.info("{} geojson files found".format(len(source_paths)))
