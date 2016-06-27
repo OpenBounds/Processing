@@ -105,8 +105,17 @@ def download(url):
         for chunk in res.iter_content(CHUNK_SIZE):
             fp.write(chunk)
     elif parsed_url.scheme == "ftp":
-        with closing(urllib2.urlopen(url)) as r:
-            shutil.copyfileobj(r, fp)
+        download = urllib2.urlopen(url)
+    
+        file_size_dl = 0
+        block_sz = 8192
+        while True:
+            buffer = download.read(block_sz)
+            if not buffer:
+                break
+    
+            file_size_dl += len(buffer)
+            fp.write(buffer)
 
     fp.close()
 
