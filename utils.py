@@ -10,6 +10,8 @@ import urllib2
 from contextlib import closing
 import zipfile
 import tarfile
+from boto.s3.connection import S3Connection
+from urllib import quote_plus
 
 import hashlib
 
@@ -91,9 +93,28 @@ def download(url):
         cache_path = os.path.join(download_cache,
             hashlib.sha224(url).hexdigest())
         if os.path.exists(cache_path):
-            info("Returning %s from cache" % url)
+            info("Returning %s from local cache" % url)
             fp.close()
             shutil.copy(cache_path, fp.name)
+            return fp
+
+    s3_cache_bucket = os.getenv("S3_CACHE_BUCKET")
+    s3_cache_key = None
+    if s3_cache_bucket is not None:
+        s3_cache_key = os.getenv("S3_CACHE_PREFIX", "") + quote_plus(url)
+        conn = S3Connection(calling_format='boto.s3.connection.OrdinaryCallingFormat')
+        if conn is None:
+            raise Exception("Error connecting to s3")
+        bucket = conn.get_bucket(s3_cache_bucket, validate=False)
+        if bucket is None:
+            raise Exception("Error getting s3 bucket")
+
+        key = bucket.get_key(s3_cache_key)
+        if key is not None:
+            info("Found %s in s3 cache at s3://%s/%s" % 
+                (url, s3_cache_bucket, s3_cache_key))
+            key.get_contents_to_file(fp)
+            fp.close()
             return fp
 
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
@@ -123,6 +144,12 @@ def download(url):
         if not os.path.exists(download_cache):
             os.makedirs(download_cache)
         shutil.copy(fp.name, cache_path)
+
+    if s3_cache_key:
+        info("Putting %s to s3 cache at s3://%s/%s" % 
+                (url, s3_cache_bucket, s3_cache_key))
+        key = bucket.new_key(s3_cache_key)
+        key.set_contents_from_filename(fp.name)
 
     return fp
 
