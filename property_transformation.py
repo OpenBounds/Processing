@@ -20,7 +20,12 @@ def get_transformed_properties(source_properties, prop_map):
                     raise PropertyMappingFailedException(
                         "Found mapping, but no key specified to map")
                 source_value = source_properties[value['key']]
-                results[key] = value['mapping'][source_value]
+                if source_value in value['mapping']:
+                    results[key] = value['mapping'][source_value]
+                else:
+                    raise PropertyMappingFailedException(
+                        "value:%s not found in mapping for key:%s" % 
+                        (source_value, key))
             else:
                 raise PropertyMappingFailedException(
                     "Failed to find key for mapping in dict for field:%s" % 
