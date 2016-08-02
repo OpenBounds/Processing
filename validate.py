@@ -1,6 +1,7 @@
 
 import json
 import re
+import sys
 
 import click
 import jsonschema
@@ -19,7 +20,7 @@ def validate(schema, jsonfiles):
     JSONFILE: JSON files to validate. Required.
     """
     schema = json.loads(schema.read())
-
+    success = True
     for path in utils.get_files(jsonfiles):
         with open(path) as f:
             try:
@@ -27,8 +28,15 @@ def validate(schema, jsonfiles):
             except ValueError:
                 utils.error("Error loading json file " + path)
                 raise Exception("Invalid json file")
-        jsonschema.validate(jsonfile, schema)
+        try:
+            jsonschema.validate(jsonfile, schema)
+        except Exception, e:
+            success = False
+            utils.error("Error validating file " + path)
+            utils.error(str(e))
 
+    if not success:
+        sys.exit(-1)
 
 if __name__ == '__main__':
     validate()
