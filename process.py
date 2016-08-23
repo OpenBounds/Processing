@@ -42,6 +42,7 @@ def process(sources, output, force):
     
             if not hasattr(adapters, source['filetype']):
                 utils.error('Unknown filetype', source['filetype'], '\n')
+                failures.append(path)
                 continue
     
             if os.path.isfile(outfile) and \
@@ -58,6 +59,7 @@ def process(sources, output, force):
                     fp = utils.download(source['url'])
                 except IOError:
                     utils.error('Failed to download', source['url'], '\n')
+                    failures.append(path)
                     continue
     
                 utils.info('Reading', urlfile)
