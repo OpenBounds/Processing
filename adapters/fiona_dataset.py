@@ -26,12 +26,24 @@ def _bbox(feat):
     x, y = zip(*list(_explode(feat['geometry']['coordinates'])))
     return min(x), min(y), max(x), max(y)
 
+def _force_geometry_2d(geometry):
+    """ Convert a geometry to 2d
+    """
+    if geometry['type'] in ['Polygon', 'MultiLineString']:
+        geometry['coordinates'] = [_force_linestring_2d(l) for l in geometry['coordinates']]
+    elif geometry['type'] in ['LineString', 'MultiPoint']:
+        geometry['coordinates'] = _force_linestring_2d(geometry['coordinates'])
+    elif geometry['type'] == 'Point':
+        geometry['coordinates'] = geometry['coordinates'][:2]
+    elif geometry['type'] == 'MultiPolygon':
+        geometry['coordinates'] = [[_force_linestring_2d(l) for l in g] for g in geometry['coordinates']]
 
-def _transformer(crs, feat):
-    tg = partial(transform_geom, crs, 'EPSG:4326',
-                 antimeridian_cutting=True, precision=6)
-    feat['geometry'] = tg(feat['geometry'])
-    return feat
+    return geometry
+
+def _force_linestring_2d(linestring):
+    """ Convert a list of coordinates to 2d
+    """
+    return [c[:2] for c in linestring]
 
 def read_fiona(source, prop_map, filterer=None):
     """Process a fiona collection
@@ -42,21 +54,24 @@ def read_fiona(source, prop_map, filterer=None):
         'bbox': [float('inf'), float('inf'), float('-inf'), float('-inf')]
     }
     skipped_count = 0
-    for rec in source:
-        transformed = _transformer(source.crs, rec)
-        if filterer is not None and not filterer.keep(transformed):
+    transformer = partial(transform_geom, source.crs, 'EPSG:4326',
+        antimeridian_cutting=True, precision=6)
+
+    for feature in source:
+        feature['geometry'] = transformer(_force_geometry_2d(feature['geometry']))
+        if filterer is not None and not filterer.keep(feature):
             skipped_count += 1
             continue
-        transformed['properties'] = get_transformed_properties(
-            transformed['properties'], prop_map)
+        feature['properties'] = get_transformed_properties(
+            feature['properties'], prop_map)
         collection['bbox'] = [
             comparator(values)
             for comparator, values in zip(
                 [min, min, max, max],
-                zip(collection['bbox'], _bbox(transformed))
+                zip(collection['bbox'], _bbox(feature))
             )
         ]
-        collection['features'].append(transformed)
+        collection['features'].append(feature)
 
     #avoid math error if there are no features
     if len(collection['features']) == 0:
