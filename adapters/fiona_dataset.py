@@ -35,6 +35,8 @@ def _force_geometry_2d(geometry):
         geometry['coordinates'] = _force_linestring_2d(geometry['coordinates'])
     elif geometry['type'] == 'Point':
         geometry['coordinates'] = geometry['coordinates'][:2]
+    elif geometry['type'] == 'MultiPolygon':
+        geometry['coordinates'] = [[_force_linestring_2d(l) for l in g] for g in geometry['coordinates']]
 
     return geometry
 
