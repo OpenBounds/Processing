@@ -4,6 +4,7 @@ import os
 from urlparse import urlparse
 import sys
 import zipfile 
+import traceback
 
 import click
 
@@ -23,6 +24,7 @@ def process(sources, output, force):
     OUTPUT: Destination directory for generated data. Required.
     """
     catalog_features = []
+    failures = []
     path_parts_to_skip = len(utils.get_path_parts(output))
     success = True
     for path in utils.get_files(sources):
@@ -73,9 +75,11 @@ def process(sources, output, force):
                             source_filename=source.get("filenameInZip", None))
                 except IOError, e:
                     utils.error('Failed to read', urlfile, str(e))
+                    failures.append(path)
                     continue
                 except zipfile.BadZipfile, e:
                     utils.error('Unable to open zip file', source['url'])
+                    failures.append(path)
                     continue
                 finally:
                     os.remove(fp.name)
@@ -105,6 +109,8 @@ def process(sources, output, force):
             }
             catalog_features.append(catalog_entry)
         except Exception, e:
+            traceback.print_exc(e)
+            failures.append(path)
             utils.error(str(e))
             utils.error("Error processing file " + path + "\n")
             success = False
@@ -116,6 +122,7 @@ def process(sources, output, force):
     utils.write_json(os.path.join(output,'catalog.geojson'), catalog)
 
     if not success:
+        utils.error("Failed sources: " + ", ".join(failures))
         sys.exit(-1)
 
 if __name__ == '__main__':
