@@ -11,6 +11,7 @@ import click
 import adapters
 from filters import BasicFilterer
 import utils
+import geoutils
 
 @click.command()
 @click.argument('sources', type=click.Path(exists=True), required=True)
@@ -104,10 +105,7 @@ def process(sources, output, force):
             catalog_entry = {
                 'type': 'Feature',
                 'properties': properties,
-                'geometry': {
-                    'type': 'Polygon',
-                    'coordinates': utils.polygon_from_bbox(geojson['bbox'])
-                }
+                'geometry': geoutils.get_union(geojson)
             }
             catalog_features.append(catalog_entry)
         except Exception, e:
