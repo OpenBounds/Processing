@@ -49,6 +49,7 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
     command = (
         'tippecanoe -o ' + output + 
         ' ' + " ".join(source_paths) + 
+        ' --no-polygon-splitting ' +
         ' -l ' + layer + # force to use a single layer
         ' -z {} -Z {}'.format(max_zoom, min_zoom)
     )
