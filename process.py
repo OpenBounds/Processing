@@ -76,6 +76,7 @@ def process(sources, output, force):
                             filterer=filterer,
                             layer_name=source.get("layerName", None),
                             source_filename=source.get("filenameInZip", None))
+                    geojson = geoutils.add_label_points(geojson)
                 except IOError, e:
                     utils.error('Failed to read', urlfile, str(e))
                     failures.append(path)

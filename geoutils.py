@@ -1,5 +1,6 @@
 from shapely.geometry import mapping, shape, Polygon, MultiPolygon
 from shapely.ops import cascaded_union
+import utils
 
 def get_union(geojson):
     """ Returns a geojson geometry that is the union of all features in a geojson feature collection """
@@ -41,3 +42,41 @@ def polygon_from_bbox(bbox):
         [bbox[0], bbox[3]],
         [bbox[0], bbox[1]]
     ]]
+
+
+def add_label_points(geojson):
+    """ Add a point feature to a geojson feature collection to be used a label point for the feature """
+    try:
+        from shapely.algorithms.polylabel import polylabel
+    except:
+        utils.error("Polylabel not available, using centroid for label points")
+        polylabel = None
+
+    label_features = []
+    for feature in geojson['features']:
+        if feature['geometry']['type'] not in ['Polygon', 'MultiPolygon']:
+            continue
+
+        feature_geometry = shape(feature['geometry'])
+
+        if type(feature_geometry) == MultiPolygon:
+            geometries = feature_geometry.geoms
+        else:
+            geometries = [feature_geometry]
+
+        for geometry in geometries:
+            if polylabel and geometry.is_valid: #polylabel doesnt work on invalid geometries, centroid does
+                label_geometry = polylabel(geometry)
+            else:
+                label_geometry = geometry.centroid
+
+            if label_geometry:
+                f = {
+                    'type': 'Feature',
+                    'geometry': mapping(label_geometry),
+                    'properties': feature['properties']
+                }
+                label_features.append(f)
+
+    geojson['features'].extend(label_features)
+    return geojson
