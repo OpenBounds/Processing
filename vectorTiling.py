@@ -50,6 +50,8 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
         'tippecanoe -o ' + output + 
         ' ' + " ".join(source_paths) + 
         ' --no-polygon-splitting ' +
+        ' -B 8 ' + # include all point features at zoom 8
+        ' -b 20 ' + # larger than default buffer so labels dont get cut off
         ' -l ' + layer + # force to use a single layer
         ' -z {} -Z {}'.format(max_zoom, min_zoom)
     )
