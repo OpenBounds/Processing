@@ -76,7 +76,6 @@ def process(sources, output, force):
                             filterer=filterer,
                             layer_name=source.get("layerName", None),
                             source_filename=source.get("filenameInZip", None))
-                    geojson = geoutils.add_label_points(geojson)
                 except IOError, e:
                     utils.error('Failed to read', urlfile, str(e))
                     failures.append(path)
@@ -99,7 +98,13 @@ def process(sources, output, force):
     
                 utils.make_sure_path_exists(outdir)
                 utils.write_json(outfile, geojson)
-        
+
+                utils.info("Generating label points")
+                label_geojson = geoutils.get_label_points(geojson)
+                pathparts[-1] = pathparts[-1].replace('.geojson', '.labels.geojson')
+                label_path = os.sep.join(pathparts)
+                utils.write_json(label_path, label_geojson)
+
                 utils.success('Done. Processed to', outfile, '\n')
     
             properties['path'] = "/".join(pathparts[path_parts_to_skip:])

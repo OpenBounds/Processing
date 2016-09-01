@@ -44,8 +44,12 @@ def polygon_from_bbox(bbox):
     ]]
 
 
-def add_label_points(geojson):
-    """ Add a point feature to a geojson feature collection to be used a label point for the feature """
+def get_label_points(geojson):
+    """ Generate label points for polygon features 
+
+    :param geojson: A GeoJSON feature collection contain Polygons or MultiPolygons
+    :returns: A new GeoJSON Feature collection containing Point features
+    """
     try:
         from shapely.algorithms.polylabel import polylabel
     except:
@@ -78,5 +82,7 @@ def add_label_points(geojson):
                 }
                 label_features.append(f)
 
-    geojson['features'].extend(label_features)
-    return geojson
+    return {
+        "type": "FeatureCollection",
+        "features": label_features
+    }
