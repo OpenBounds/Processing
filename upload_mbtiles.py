@@ -10,6 +10,7 @@ import cStringIO
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
+import boto
 import click
 
 import utils
@@ -72,7 +73,7 @@ def upload(mbtiles, s3_url, threads, extension):
         s3_url: url to an s3 bucket to upload tiles to
     """
     base_url = urlparse(s3_url)
-    conn = S3Connection()
+    conn = S3Connection(calling_format=boto.s3.connection.OrdinaryCallingFormat())
     bucket = conn.get_bucket(base_url.netloc)
     key_prefix = base_url.path.lstrip("/")
 
