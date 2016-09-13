@@ -28,10 +28,12 @@ class BasicFilterer(object):
             elif item['expression'] == "!=":
                 test_success = item['key'] not in feature['properties'] or \
                     feature['properties'][item['key']] != item['value']
-            elif item['expression'] == "match":
+            elif item['expression'] == "match" or item['expression'] == "not match":
                 test_success = item['key'] in feature['properties'] and \
                     feature['properties'][item['key']] is not None and \
                     re.match(item['value'], feature['properties'][item['key']])
+                if item['expression'] == "not match":
+                    test_success = not test_success
             else:
                 raise FilteringFailedException("Unhandled filtering expression:%s" % 
                     (item['expression']))
