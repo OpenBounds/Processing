@@ -20,6 +20,8 @@ def get_transformed_properties(source_properties, prop_map):
                     raise PropertyMappingFailedException(
                         "Found mapping, but no key specified to map")
                 source_value = source_properties[value['key']]
+                if source_value is None:
+                    source_value = "null"
                 if source_value in value['mapping']:
                     results[key] = value['mapping'][source_value]
                 else:
