@@ -11,6 +11,7 @@ import click
 import adapters
 from filters import BasicFilterer
 import utils
+import geoutils
 
 @click.command()
 @click.argument('sources', type=click.Path(exists=True), required=True)
@@ -97,17 +98,20 @@ def process(sources, output, force):
     
                 utils.make_sure_path_exists(outdir)
                 utils.write_json(outfile, geojson)
-        
+
+                utils.info("Generating label points")
+                label_geojson = geoutils.get_label_points(geojson)
+                pathparts[-1] = pathparts[-1].replace('.geojson', '.labels.geojson')
+                label_path = os.sep.join(pathparts)
+                utils.write_json(label_path, label_geojson)
+
                 utils.success('Done. Processed to', outfile, '\n')
     
             properties['path'] = "/".join(pathparts[path_parts_to_skip:])
             catalog_entry = {
                 'type': 'Feature',
                 'properties': properties,
-                'geometry': {
-                    'type': 'Polygon',
-                    'coordinates': utils.polygon_from_bbox(geojson['bbox'])
-                }
+                'geometry': geoutils.get_union(geojson)
             }
             catalog_features.append(catalog_entry)
         except Exception, e:
