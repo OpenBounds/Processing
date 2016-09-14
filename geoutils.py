@@ -1,4 +1,4 @@
-from shapely.geometry import mapping, shape, Polygon, MultiPolygon
+from shapely.geometry import mapping, shape, Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import cascaded_union
 import utils
 
@@ -20,7 +20,7 @@ def get_union(geojson):
 
     result = cascaded_union(shapes)
     #get rid of holes
-    if type(result) == MultiPolygon:
+    if type(result) in (MultiPolygon, GeometryCollection):
         hulls = [Polygon(r.exterior) for r in result.geoms]
         hull = MultiPolygon(hulls)
     else:
