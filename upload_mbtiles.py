@@ -47,15 +47,23 @@ class MBTilesGenerator(object):
         return zoom, x, y, tile
 
 
-def upload_tile(bucket, key_template, tile_stuff, progress=True):
-    zoom, x, y, tile = tile_stuff
-    k = Key(bucket)
-    k.key = key_template.format(z=zoom, x=x, y=y)
-    k.set_contents_from_string(str(tile))
-    global upload_count
-    upload_count += 1
-    if progress and upload_count % 10 == 0:
-        print("%i/%i" % (upload_count, tile_count))
+def upload_tile(bucket, key_template, tile_stuff, progress=True, retries=0):
+    try:
+        zoom, x, y, tile = tile_stuff
+        k = Key(bucket)
+        k.key = key_template.format(z=zoom, x=x, y=y)
+        k.set_contents_from_string(str(tile))
+        global upload_count
+        upload_count += 1
+        if progress and upload_count % 10 == 0:
+            print("%i/%i" % (upload_count, tile_count))
+    except Exception, e:
+        utils.error(str(e))
+        if retries < 2:
+            upload_tile(bucket, key_template, tile_stuff, progress=progress, retries=retries + 1)
+        else:
+            raise Exception("Too Many upload failures")
+
 
 @click.command()
 @click.argument('mbtiles', type=click.Path(exists=True), required=True)
