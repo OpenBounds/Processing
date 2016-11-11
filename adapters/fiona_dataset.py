@@ -2,7 +2,7 @@ from functools import partial
 
 import fiona
 from fiona.transform import transform_geom
-from shapely.geometry import mapping, shape
+from shapely.geometry import mapping, shape, Polygon, MultiPolygon
 from shapely.geometry.polygon import orient
 
 from property_transformation import get_transformed_properties
@@ -64,6 +64,18 @@ def _force_polygon_ccw(geometry):
     polygon = shape(geometry)
     return mapping(orient(polygon))
 
+def _fix_geometry(geometry):
+    shapely_geometry = shape(geometry)
+    if not shapely_geometry.is_valid:
+        buffered = shapely_geometry.buffer(0.0)
+#this will fix some invalid geometries, including bow-tie geometries, but for others it will return an empty geometry
+        if buffered and (
+            (type(buffered) == Polygon and buffered.exterior) 
+            or 
+            (type(buffered) == MultiPolygon and len(buffered.geoms) > 0)
+            ):
+            return mapping(buffered)
+    return geometry
 
 def read_fiona(source, prop_map, filterer=None):
     """Process a fiona collection
@@ -82,7 +94,8 @@ def read_fiona(source, prop_map, filterer=None):
             skipped_count += 1
             continue
         transformed_geometry = transformer(_force_geometry_2d(feature['geometry']))
-        feature['geometry'] = _force_geometry_ccw(transformed_geometry)
+        fixed_geometry = _fix_geometry(transformed_geometry)
+        feature['geometry'] = _force_geometry_ccw(fixed_geometry)
 
         feature['properties'] = get_transformed_properties(
             feature['properties'], prop_map)
