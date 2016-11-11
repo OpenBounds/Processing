@@ -1,6 +1,7 @@
 from shapely.geometry import mapping, shape, Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import cascaded_union
 import utils
+import logging
 
 def get_union(geojson):
     """ Returns a geojson geometry that is the union of all features in a geojson feature collection """
@@ -11,14 +12,29 @@ def get_union(geojson):
 
         s = shape(feature['geometry'])
         if s and s.is_valid:
+            #get rid of holes
+            if type(s) in (MultiPolygon, GeometryCollection):
+                hulls = [Polygon(r.exterior) for r in s.geoms]
+                hull = MultiPolygon(hulls)
+            else:
+                hull = Polygon(s.exterior)
+
             #simplify so calculating union doesnt take forever
-            simplified = s.simplify(0.01, preserve_topology=True)
+            simplified = hull.simplify(0.01, preserve_topology=True)
             if simplified.is_valid:
                 shapes.append(simplified)
             else:
-                shapes.append(s)
+                shapes.append(hull)
 
-    result = cascaded_union(shapes)
+    try:
+        result = cascaded_union(shapes)
+    except Exception, e:
+        #workaround for geos bug with cacscaded_union sometimes failing
+        logging.error("cascaded_union failed, falling back to union")
+        result = shapes.pop()
+        for s in shapes:
+            result = result.union(s)
+
     #get rid of holes
     if type(result) in (MultiPolygon, GeometryCollection):
         hulls = [Polygon(r.exterior) for r in result.geoms]

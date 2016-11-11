@@ -101,8 +101,9 @@ def process(sources, output, force):
 
                 utils.info("Generating label points")
                 label_geojson = geoutils.get_label_points(geojson)
-                pathparts[-1] = pathparts[-1].replace('.geojson', '.labels.geojson')
-                label_path = os.sep.join(pathparts)
+                label_pathparts = list(pathparts)
+                label_pathparts[-1] = label_pathparts[-1].replace('.geojson', '.labels.geojson')
+                label_path = os.sep.join(label_pathparts)
                 utils.write_json(label_path, label_geojson)
 
                 utils.success('Done. Processed to', outfile, '\n')
