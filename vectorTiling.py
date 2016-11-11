@@ -50,6 +50,8 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
         'tippecanoe -o ' + output + 
         ' ' + " ".join(source_paths) + 
         ' --no-polygon-splitting ' +
+        '--coalesce --reverse --reorder ' + # try really hard to coalesce polygons with the same properties
+        '--detect-shared-borders ' + # Avoid small gaps between polygons when simplifying
         ' -l ' + layer + # force to use a single layer
         ' -z {} -Z {}'.format(max_zoom, min_zoom)
     )
