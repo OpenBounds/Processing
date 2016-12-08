@@ -86,6 +86,7 @@ def read_fiona(source, prop_map, filterer=None):
         'bbox': [float('inf'), float('inf'), float('-inf'), float('-inf')]
     }
     skipped_count = 0
+    failed_count = 0
     transformer = partial(transform_geom, source.crs, 'EPSG:4326',
         antimeridian_cutting=True, precision=6)
 
@@ -93,26 +94,34 @@ def read_fiona(source, prop_map, filterer=None):
         if filterer is not None and not filterer.keep(feature):
             skipped_count += 1
             continue
-        transformed_geometry = transformer(_force_geometry_2d(feature['geometry']))
-        fixed_geometry = _fix_geometry(transformed_geometry)
-        feature['geometry'] = _force_geometry_ccw(fixed_geometry)
+        if feature['geometry'] is None:
+            utils.error("empty geometry")
+            failed_count += 1
+            continue
+        try:
+            transformed_geometry = transformer(_force_geometry_2d(feature['geometry']))
+            fixed_geometry = _fix_geometry(transformed_geometry)
+            feature['geometry'] = _force_geometry_ccw(fixed_geometry)
 
-        feature['properties'] = get_transformed_properties(
-            feature['properties'], prop_map)
-        collection['bbox'] = [
-            comparator(values)
-            for comparator, values in zip(
-                [min, min, max, max],
-                zip(collection['bbox'], _bbox(feature))
-            )
-        ]
-        collection['features'].append(feature)
+            feature['properties'] = get_transformed_properties(
+                feature['properties'], prop_map)
+            collection['bbox'] = [
+                comparator(values)
+                for comparator, values in zip(
+                    [min, min, max, max],
+                    zip(collection['bbox'], _bbox(feature))
+                )
+            ]
+            collection['features'].append(feature)
+        except Exception, e:
+            utils.error(str(e), "error processing feature: " + str(feature))
+            failed_count += 1
 
     #avoid math error if there are no features
     if len(collection['features']) == 0:
         del collection['bbox']
 
-    utils.info("skipped %i features, kept %i features" % 
-        (skipped_count, len(collection['features'])))
+    utils.info("skipped %i features, kept %i features, errored %i features" % 
+        (skipped_count, len(collection['features']), failed_count))
 
     return collection
