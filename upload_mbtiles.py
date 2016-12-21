@@ -52,6 +52,7 @@ def upload_tile(bucket, key_template, tile_stuff, progress=True, retries=0):
         zoom, x, y, tile = tile_stuff
         k = Key(bucket)
         k.key = key_template.format(z=zoom, x=x, y=y)
+        k.set_metadata("Content-Encoding", "gzip")
         k.set_contents_from_string(str(tile))
         global upload_count
         upload_count += 1
