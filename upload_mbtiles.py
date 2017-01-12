@@ -47,12 +47,13 @@ class MBTilesGenerator(object):
         return zoom, x, y, tile
 
 
-def upload_tile(bucket, key_template, tile_stuff, progress=True, retries=0):
+def upload_tile(bucket, key_template, headers, tile_stuff, progress=True, retries=0):
     try:
         zoom, x, y, tile = tile_stuff
         k = Key(bucket)
         k.key = key_template.format(z=zoom, x=x, y=y)
-        k.set_metadata("Content-Encoding", "gzip")
+        for key, value in headers.items():
+            k.set_metadata(key, value)
         k.set_contents_from_string(str(tile))
         global upload_count
         upload_count += 1
@@ -61,7 +62,7 @@ def upload_tile(bucket, key_template, tile_stuff, progress=True, retries=0):
     except Exception, e:
         utils.error(str(e))
         if retries < 2:
-            upload_tile(bucket, key_template, tile_stuff, progress=progress, retries=retries + 1)
+            upload_tile(bucket, key_template, headers, tile_stuff, progress=progress, retries=retries + 1)
         else:
             raise Exception("Too Many upload failures")
 
@@ -89,10 +90,29 @@ def upload(mbtiles, s3_url, threads, extension):
     tiles = MBTilesGenerator(mbtiles)
     global tile_count
     tile_count = tiles.len()
+    if extension == ".pbf":
+        headers = {
+            "Content-Encoding":"gzip",
+            "Content-Type": "application/vnd.mapbox-vector-tile"
+        }
+    elif extension == ".webp":
+        headers = {
+            "Content-Type":"image/webp"
+        }
+    elif extension == ".png":
+        headers = {
+            "Content-Type":"image/png"
+        }
+    elif extension == ".jpg" or extension == ".jpeg":
+        headers = {
+            "Content-Type":"image/jpeg"
+        }
+    else:
+        headers = {}
 
     key_template = key_prefix + "{z}/{x}/{y}" + extension
     pool = ThreadPool(threads)
-    func = partial(upload_tile, bucket, key_template)
+    func = partial(upload_tile, bucket, key_template, headers)
     pool.map(func, tiles)
 
 
