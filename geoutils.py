@@ -1,7 +1,9 @@
 from shapely.geometry import mapping, shape, Polygon, MultiPolygon, GeometryCollection
-from shapely.ops import cascaded_union
+from shapely.ops import cascaded_union, transform
 import utils
 import logging
+from functools import partial
+import pyproj
 
 def get_union(geojson):
     """ Returns a geojson geometry that is the union of all features in a geojson feature collection """
@@ -60,16 +62,20 @@ def polygon_from_bbox(bbox):
     ]]
 
 
-def get_label_points(geojson):
+def get_label_points(geojson, use_polylabel=True):
     """ Generate label points for polygon features 
 
     :param geojson: A GeoJSON feature collection contain Polygons or MultiPolygons
     :returns: A new GeoJSON Feature collection containing Point features
     """
-    try:
-        from shapely.algorithms.polylabel import polylabel
-    except:
-        utils.error("Polylabel not available, using centroid for label points")
+    if use_polylabel:
+        try:
+            from shapely.algorithms.polylabel import polylabel
+        except:
+            utils.error("Polylabel not available, using centroid for label points")
+            polylabel = None
+    else:
+        utils.error("using centroid for label points, Polylabel disabled")
         polylabel = None
 
     label_features = []
@@ -86,7 +92,17 @@ def get_label_points(geojson):
 
         for geometry in geometries:
             if polylabel and geometry.is_valid: #polylabel doesnt work on invalid geometries, centroid does
-                label_geometry = polylabel(geometry)
+                project = partial(
+                    pyproj.transform,
+                    pyproj.Proj(init='epsg:4326'),
+                    pyproj.Proj(init='epsg:3857'))
+                geometry_3857 = transform(project, geometry)
+                label_geometry_3857 = polylabel(geometry_3857)
+                project = partial(
+                    pyproj.transform,
+                    pyproj.Proj(init='epsg:3857'),
+                    pyproj.Proj(init='epsg:4326'))
+                label_geometry = transform(project, label_geometry_3857)  # apply projection
             else:
                 label_geometry = geometry.centroid
 
