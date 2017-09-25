@@ -97,6 +97,17 @@ def process(sources, output, force):
                 geojson['properties'] = properties
     
                 utils.make_sure_path_exists(outdir)
+
+                filename_to_match, ext = os.path.splitext(pathparts[-1])
+                for name in os.listdir(os.sep.join(pathparts[:-1])):
+                    base = name.split(".")[0]
+                    if base == filename_to_match:
+                        to_remove = list(pathparts[:-1])
+                        to_remove.append(name)
+                        to_remove = os.sep.join(to_remove)
+                        utils.info("Removing generated file " + to_remove)
+                        os.remove(to_remove)
+
                 utils.write_json(outfile, geojson)
 
                 utils.info("Generating label points")
