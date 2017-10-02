@@ -23,7 +23,9 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
 
     if shp_name is None:
         for name in zipped_file.infolist():
-            base, ext = os.path.splitext(name.filename)
+            base, ext = os.path.splitext(os.path.basename(name.filename))
+            if base.startswith("."):
+                continue
             if ext == ".shp":
                 if shp_name is not None:
                     raise Exception("Found multiple shapefiles in zipfile")
