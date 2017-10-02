@@ -93,7 +93,7 @@ def download(url):
         cache_path = os.path.join(download_cache,
             hashlib.sha224(url).hexdigest())
         if os.path.exists(cache_path):
-            info("Returning %s from local cache" % url)
+            info("Returning %s from local cache at %s" % (url, cache_path))
             fp.close()
             shutil.copy(cache_path, fp.name)
             return fp
