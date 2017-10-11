@@ -111,6 +111,7 @@ def upload(mbtiles, s3_url, threads, extension):
         headers = {}
 
     key_template = key_prefix + "{z}/{x}/{y}" + extension
+    print("uploading tiles from %s to s3://%s/%s" % (mbtiles, bucket.name, key_template))
     pool = ThreadPool(threads)
     func = partial(upload_tile, bucket, key_template, headers)
     pool.map(func, tiles)
