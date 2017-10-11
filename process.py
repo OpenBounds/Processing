@@ -5,6 +5,7 @@ from urlparse import urlparse
 import sys
 import zipfile 
 import traceback
+import logging
 
 import click
 
@@ -24,6 +25,8 @@ def process(sources, output, force):
     SOURCES: Source JSON file or directory of files. Required.
     OUTPUT: Destination directory for generated data. Required.
     """
+    logging.getLogger('shapely.geos').setLevel(logging.WARNING)
+
     catalog_features = []
     failures = []
     path_parts_to_skip = len(utils.get_path_parts(output))
