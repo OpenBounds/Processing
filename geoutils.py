@@ -13,6 +13,12 @@ def get_union(geojson):
             continue
 
         s = shape(feature['geometry'])
+        if s and not s.is_valid:
+            s = s.buffer(0.0)
+            if not s.is_valid:
+                logging.error("Invalid geometry in get_union, failed to fix")
+            else: 
+                logging.error("Invalid geometry in get_union. Fixed.")
         if s and s.is_valid:
             #get rid of holes
             if type(s) in (MultiPolygon, GeometryCollection):
