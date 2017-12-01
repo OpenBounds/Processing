@@ -96,6 +96,7 @@ def process(sources, output, force):
                 properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
                 properties['source_url'] = source['url']
                 properties['feature_count'] = len(geojson['features'])
+                properties['demo'] = geoutils.get_demo_point(geojson)
                 
                 geojson['properties'] = properties
     
@@ -122,6 +123,9 @@ def process(sources, output, force):
 
                 utils.success('Done. Processed to', outfile, '\n')
     
+            if not "demo" in properties:
+                properties['demo'] = geoutils.get_demo_point(geojson)
+
             properties['path'] = "/".join(pathparts[path_parts_to_skip:])
             catalog_entry = {
                 'type': 'Feature',
