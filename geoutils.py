@@ -1,9 +1,11 @@
-from shapely.geometry import mapping, shape, Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import mapping, shape, Polygon, MultiPolygon, GeometryCollection, LineString
 from shapely.ops import cascaded_union, transform
 import utils
 import logging
 from functools import partial
 import pyproj
+from rtree import index
+import mercantile
 
 def get_union(geojson):
     """ Returns a geojson geometry that is the union of all features in a geojson feature collection """
@@ -124,3 +126,48 @@ def get_label_points(geojson, use_polylabel=True):
         "type": "FeatureCollection",
         "features": label_features
     }
+
+
+def get_demo_point(geojson):
+    logging.debug("Inserting into index")
+    geometries = []
+    for feature in geojson['features']:
+        if feature['geometry']['type'] == "Polygon":
+            rings = feature['geometry']['coordinates']
+        elif feature['geometry']['type'] == "MultiPolygon":
+            rings = []
+            for p in feature['geometry']['coordinates']:
+                rings.extend(p)
+
+        for ring in rings:
+            s = LineString(ring)
+            geometries.append(s)
+
+    def generator_function():
+        for i, obj in enumerate(geometries):
+            yield (i, obj.bounds, i) #Buffer geometry so it comes up in intersection queries
+    spatial_index = index.Index(generator_function())
+
+    best_tile = None
+    best_tile_feature_count = 0
+    envelope = shape(get_union(geojson)).bounds
+    logging.debug("Iterating tiles to find best tile")
+    for tile in mercantile.tiles(envelope[0], envelope[1], envelope[2], envelope[3], [16]):
+        tile_bounds = mercantile.bounds(tile.x, tile.y, tile.z)
+        tile_features = [i for i in spatial_index.intersection(tile_bounds)]
+        if len(tile_features) > best_tile_feature_count:
+            tile_bounds_geometry = Polygon(polygon_from_bbox(tile_bounds)[0])
+            tile_feature_count = 0
+            for i in tile_features:
+                if tile_bounds_geometry.intersects(geometries[i]):
+                    tile_feature_count += 1
+            if tile_feature_count > best_tile_feature_count:
+                best_tile_feature_count = tile_feature_count
+                best_tile = tile
+
+    if best_tile:
+        logging.debug("best tile: " + str(best_tile) + " had " + str(best_tile_feature_count) + " features")
+        tile_bounds = mercantile.bounds(best_tile.x, best_tile.y, best_tile.z)
+        return ((tile_bounds[0] + tile_bounds[2])/2.0, (tile_bounds[1] + tile_bounds[3])/2.0)
+    else:
+        logging.error("Found 0 tiles with features")
