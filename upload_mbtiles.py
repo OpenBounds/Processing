@@ -74,7 +74,9 @@ def upload_tile(bucket, key_template, headers, tile_stuff, progress=True, retrie
     help="Number of simultaneous uploads")
 @click.option('--extension', default=".pbf",
     help="File extension for tiles")
-def upload(mbtiles, s3_url, threads, extension):
+@click.option('--header', '-h', multiple=True,
+    help="Additional headers")
+def upload(mbtiles, s3_url, threads, extension, header):
     """Upload tiles from an MBTiles file to S3.
 
     \b
@@ -87,28 +89,33 @@ def upload(mbtiles, s3_url, threads, extension):
     bucket = conn.get_bucket(base_url.netloc)
     key_prefix = base_url.path.lstrip("/")
 
+    headers = {}
+    if header is not None:
+        for h in header:
+            k,v = h.split(":")
+            headers[k] = v
+
+    if extension == ".pbf":
+        headers.update({
+            "Content-Encoding":"gzip",
+            "Content-Type": "application/vnd.mapbox-vector-tile"
+        })
+    elif extension == ".webp":
+        headers.update({
+            "Content-Type":"image/webp"
+        })
+    elif extension == ".png":
+        headers.update({
+            "Content-Type":"image/png"
+        })
+    elif extension == ".jpg" or extension == ".jpeg":
+        headers.update({
+            "Content-Type":"image/jpeg"
+        })
+
     tiles = MBTilesGenerator(mbtiles)
     global tile_count
     tile_count = tiles.len()
-    if extension == ".pbf":
-        headers = {
-            "Content-Encoding":"gzip",
-            "Content-Type": "application/vnd.mapbox-vector-tile"
-        }
-    elif extension == ".webp":
-        headers = {
-            "Content-Type":"image/webp"
-        }
-    elif extension == ".png":
-        headers = {
-            "Content-Type":"image/png"
-        }
-    elif extension == ".jpg" or extension == ".jpeg":
-        headers = {
-            "Content-Type":"image/jpeg"
-        }
-    else:
-        headers = {}
 
     key_template = key_prefix + "{z}/{x}/{y}" + extension
     print("uploading tiles from %s to s3://%s/%s" % (mbtiles, bucket.name, key_template))
