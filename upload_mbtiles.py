@@ -5,12 +5,8 @@ from urlparse import urlparse
 import sqlite3
 from multiprocessing.pool import ThreadPool
 from functools import partial
-import cStringIO
 
-from boto.s3.connection import S3Connection
-from boto.s3.key import Key
-from boto.exception import S3ResponseError
-import boto
+import boto3
 import click
 
 import utils
@@ -47,14 +43,16 @@ class MBTilesGenerator(object):
         return zoom, x, y, tile
 
 
-def upload_tile(bucket, key_template, headers, tile_stuff, progress=True, retries=0):
+def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, retries=0):
     try:
         zoom, x, y, tile = tile_stuff
-        k = Key(bucket)
-        k.key = key_template.format(z=zoom, x=x, y=y)
-        for key, value in headers.items():
-            k.set_metadata(key, value)
-        k.set_contents_from_string(str(tile))
+        s3.put_object(Body=str(tile), 
+            Bucket=bucket,
+            Key=key_template.format(z=zoom, x=x, y=y), 
+            ContentType=headers.get("Content-Type", None),
+            ContentEncoding=headers.get("Content-Encoding", None),
+            CacheControl=headers.get("Cache-Control", None)
+        )
         global upload_count
         upload_count += 1
         if progress and upload_count % 10 == 0:
@@ -62,7 +60,7 @@ def upload_tile(bucket, key_template, headers, tile_stuff, progress=True, retrie
     except Exception, e:
         utils.error(str(e))
         if retries < 2:
-            upload_tile(bucket, key_template, headers, tile_stuff, progress=progress, retries=retries + 1)
+            upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=progress, retries=retries + 1)
         else:
             raise Exception("Too Many upload failures")
 
@@ -85,14 +83,17 @@ def upload(mbtiles, s3_url, threads, extension, header):
         s3_url: url to an s3 bucket to upload tiles to
     """
     base_url = urlparse(s3_url)
-    conn = S3Connection(calling_format=boto.s3.connection.OrdinaryCallingFormat())
-    bucket = conn.get_bucket(base_url.netloc)
+
+    s3 = boto3.client('s3')
+    bucket = base_url.netloc
     key_prefix = base_url.path.lstrip("/")
 
     headers = {}
     if header is not None:
         for h in header:
             k,v = h.split(":")
+            if k not in ("Cache-Control", "Content-Type", "Content-Encoding"):
+                raise Exception("Unsupported header")
             headers[k] = v
 
     if extension == ".pbf":
@@ -118,9 +119,9 @@ def upload(mbtiles, s3_url, threads, extension, header):
     tile_count = tiles.len()
 
     key_template = key_prefix + "{z}/{x}/{y}" + extension
-    print("uploading tiles from %s to s3://%s/%s" % (mbtiles, bucket.name, key_template))
+    print("uploading tiles from %s to s3://%s/%s" % (mbtiles, bucket, key_template))
     pool = ThreadPool(threads)
-    func = partial(upload_tile, bucket, key_template, headers)
+    func = partial(upload_tile, s3, bucket, key_template, headers)
     pool.map(func, tiles)
 
 
