@@ -49,9 +49,9 @@ def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, re
         s3.put_object(Body=str(tile), 
             Bucket=bucket,
             Key=key_template.format(z=zoom, x=x, y=y), 
-            ContentType=headers.get("Content-Type", None),
-            ContentEncoding=headers.get("Content-Encoding", None),
-            CacheControl=headers.get("Cache-Control", None)
+            ContentType=headers.get("Content-Type", ''),
+            ContentEncoding=headers.get("Content-Encoding", ''),
+            CacheControl=headers.get("Cache-Control", '')
         )
         global upload_count
         upload_count += 1
