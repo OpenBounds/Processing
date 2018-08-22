@@ -38,7 +38,7 @@ def get_union(geojson):
 
     try:
         result = cascaded_union(shapes)
-    except Exception, e:
+    except Exception as e:
         #workaround for geos bug with cacscaded_union sometimes failing
         logging.error("cascaded_union failed, falling back to union")
         result = shapes.pop()

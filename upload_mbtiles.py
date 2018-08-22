@@ -1,7 +1,7 @@
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import os
-from urlparse import urlparse
+from urllib.parse import urlparse
 import sqlite3
 from multiprocessing.pool import ThreadPool
 from functools import partial
@@ -32,9 +32,9 @@ class MBTilesGenerator(object):
 
     # Python 3 compatibility
     def __next__(self):
-        return self.next()
+        return next(self)
 
-    def next(self):
+    def __next__(self):
         row = self.cursor.fetchone()
         if row == None:
             raise StopIteration()
@@ -57,7 +57,7 @@ def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, re
         upload_count += 1
         if progress and upload_count % 10 == 0:
             print("%i/%i" % (upload_count, tile_count))
-    except Exception, e:
+    except Exception as e:
         utils.error(str(e))
         if retries < 2:
             upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=progress, retries=retries + 1)

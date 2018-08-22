@@ -16,7 +16,7 @@ def _explode(coords):
     From @sgillies answer: http://gis.stackexchange.com/a/90554/27367
     """
     for e in coords:
-        if isinstance(e, (float, int, long)):
+        if isinstance(e, (float, int)):
             yield coords
             break
         else:
@@ -25,7 +25,7 @@ def _explode(coords):
 
 
 def _bbox(feat):
-    x, y = zip(*list(_explode(feat['geometry']['coordinates'])))
+    x, y = list(zip(*list(_explode(feat['geometry']['coordinates']))))
     return min(x), min(y), max(x), max(y)
 
 def _force_geometry_2d(geometry):
@@ -109,11 +109,11 @@ def read_fiona(source, prop_map, filterer=None):
                 comparator(values)
                 for comparator, values in zip(
                     [min, min, max, max],
-                    zip(collection['bbox'], _bbox(feature))
+                    list(zip(collection['bbox'], _bbox(feature)))
                 )
             ]
             collection['features'].append(feature)
-        except Exception, e:
+        except Exception as e:
             utils.error(str(e), "error processing feature: " + str(feature))
             failed_count += 1
 

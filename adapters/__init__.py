@@ -1,5 +1,5 @@
 
-import shp
-import kml
-import geojson
-import gdb
+from . import shp
+from . import kml
+from . import geojson
+from . import gdb

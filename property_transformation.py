@@ -1,18 +1,16 @@
-from types import UnicodeType, StringType
-
 class PropertyMappingFailedException(Exception):
     pass
 
 def get_transformed_properties(source_properties, prop_map):
     results = {}
-    for key, value in prop_map.iteritems():
-        if type(value) in (StringType, UnicodeType):
+    for key, value in prop_map.items():
+        if isinstance(value, str):
             if value in source_properties:
                 results[key] = source_properties[value]
             else:
                 raise PropertyMappingFailedException("property %s not found in source feature" % 
                     (value))
-        elif type(value) == dict:
+        elif isinstance(value, dict):
             if "static" in value:
                 results[key] = value["static"]
             elif "mapping" in value:
