@@ -1,4 +1,3 @@
-from types import UnicodeType, StringType
 import re
 
 class FilteringFailedException(Exception):

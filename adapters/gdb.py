@@ -6,7 +6,7 @@ from utils import get_compressed_file_wrapper
 
 
 import fiona
-import fiona_dataset
+from . import fiona_dataset
 
 def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
     """Read FileGeoDatabase.

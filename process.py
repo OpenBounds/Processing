@@ -1,11 +1,13 @@
+#!/usr/bin/env python3
 
 import json
 import os
-from urlparse import urlparse
+from urllib.parse import urlparse
 import sys
 import zipfile 
 import traceback
 import logging
+import requests
 
 import click
 
@@ -26,6 +28,9 @@ def process(sources, output, force):
     OUTPUT: Destination directory for generated data. Required.
     """
     logging.getLogger('shapely.geos').setLevel(logging.WARNING)
+    logging.getLogger('Fiona').setLevel(logging.WARNING)
+    logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
+    requests.packages.urllib3.disable_warnings()
 
     catalog_features = []
     failures = []
@@ -79,11 +84,11 @@ def process(sources, output, force):
                             filterer=filterer,
                             layer_name=source.get("layerName", None),
                             source_filename=source.get("filenameInZip", None))
-                except IOError, e:
+                except IOError as e:
                     utils.error('Failed to read', urlfile, str(e))
                     failures.append(path)
                     continue
-                except zipfile.BadZipfile, e:
+                except zipfile.BadZipfile as e:
                     utils.error('Unable to open zip file', source['url'])
                     failures.append(path)
                     continue
@@ -93,7 +98,7 @@ def process(sources, output, force):
                     utils.error("Result contained no features for " + path)
                     continue
                 excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
-                properties = {k:v for k,v in source.iteritems() if k not in excluded_keys}
+                properties = {k:v for k,v in list(source.items()) if k not in excluded_keys}
                 properties['source_url'] = source['url']
                 properties['feature_count'] = len(geojson['features'])
                 properties['demo'] = geoutils.get_demo_point(geojson)
@@ -133,7 +138,7 @@ def process(sources, output, force):
                 'geometry': geoutils.get_union(geojson)
             }
             catalog_features.append(catalog_entry)
-        except Exception, e:
+        except Exception as e:
             traceback.print_exc(e)
             failures.append(path)
             utils.error(str(e))

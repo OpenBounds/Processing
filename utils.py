@@ -4,14 +4,14 @@ import ujson
 import logging
 import tempfile
 import sys
-from urlparse import urlparse
+from urllib.parse import urlparse
 import shutil
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from contextlib import closing
 import zipfile
 import tarfile
 from boto.s3.connection import S3Connection
-from urllib import quote_plus
+from urllib.parse import quote_plus
 
 import hashlib
 
@@ -126,7 +126,7 @@ def download(url):
         for chunk in res.iter_content(CHUNK_SIZE):
             fp.write(chunk)
     elif parsed_url.scheme == "ftp":
-        download = urllib2.urlopen(url)
+        download = urllib.request.urlopen(url)
     
         file_size_dl = 0
         block_sz = 8192

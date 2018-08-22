@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import json
 import re
@@ -30,7 +31,7 @@ def validate(schema, jsonfiles):
                 raise Exception("Invalid json file")
         try:
             jsonschema.validate(jsonfile, schema)
-        except Exception, e:
+        except Exception as e:
             success = False
             utils.error("Error validating file " + path)
             utils.error(str(e))
