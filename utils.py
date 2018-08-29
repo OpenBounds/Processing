@@ -21,7 +21,7 @@ import requests
 CHUNK_SIZE = 1024
 
 logging.basicConfig(level=logging.INFO,
-    format='%(asctime)s - %(message)s', datefmt="%H:%M:%S")
+    format='%(asctime)s [%(levelname)s] - %(message)s', datefmt="%H:%M:%S")
 
 
 def get_files(path):
