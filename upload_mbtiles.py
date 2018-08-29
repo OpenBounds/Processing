@@ -30,10 +30,6 @@ class MBTilesGenerator(object):
     def __iter__(self):
         return self
 
-    # Python 3 compatibility
-    def __next__(self):
-        return next(self)
-
     def __next__(self):
         row = self.cursor.fetchone()
         if row == None:
@@ -46,7 +42,7 @@ class MBTilesGenerator(object):
 def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, retries=0):
     try:
         zoom, x, y, tile = tile_stuff
-        s3.put_object(Body=str(tile), 
+        s3.put_object(Body=tile, 
             Bucket=bucket,
             Key=key_template.format(z=zoom, x=x, y=y), 
             ContentType=headers.get("Content-Type", ''),
