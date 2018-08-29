@@ -31,6 +31,7 @@ def process(sources, output, force):
     logging.getLogger('Fiona').setLevel(logging.WARNING)
     logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
     requests.packages.urllib3.disable_warnings()
+    # logging.getLogger('processing').setLevel(logging.DEBUG)
 
     catalog_features = []
     failures = []
@@ -101,6 +102,7 @@ def process(sources, output, force):
                 properties = {k:v for k,v in list(source.items()) if k not in excluded_keys}
                 properties['source_url'] = source['url']
                 properties['feature_count'] = len(geojson['features'])
+                utils.info("Generating demo point")
                 properties['demo'] = geoutils.get_demo_point(geojson)
                 
                 geojson['properties'] = properties

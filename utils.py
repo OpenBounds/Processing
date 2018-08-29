@@ -20,7 +20,8 @@ import requests
 
 CHUNK_SIZE = 1024
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO,
+    format='%(asctime)s - %(message)s', datefmt="%H:%M:%S")
 
 
 def get_files(path):
@@ -153,23 +154,23 @@ def download(url):
 
     return fp
 
-
+forceLogging = True
 def info(*strings):
-    if sys.stdout.isatty():
+    if not forceLogging and sys.stdout.isatty():
         click.echo(' '.join(strings))
     else:
         logging.info(' '.join(strings))
 
 
 def error(*strings):
-    if sys.stdout.isatty():
+    if not forceLogging and sys.stdout.isatty():
         click.secho(' '.join(strings), fg='red')
     else:
         logging.error(' '.join(strings))
 
 
 def success(*strings):
-    if sys.stdout.isatty():
+    if not forceLogging and sys.stdout.isatty():
         click.secho(' '.join(strings), fg='green')
     else:
         logging.info(' '.join(strings))

@@ -7,6 +7,8 @@ import pyproj
 from rtree import index
 import mercantile
 
+logger = logging.getLogger("processing")
+
 def get_union(geojson):
     """ Returns a geojson geometry that is the union of all features in a geojson feature collection """
     shapes = []
@@ -18,9 +20,9 @@ def get_union(geojson):
         if s and not s.is_valid:
             s = s.buffer(0.0)
             if not s.is_valid:
-                logging.error("Invalid geometry in get_union, failed to fix")
+                logger.error("Invalid geometry in get_union, failed to fix")
             else: 
-                logging.error("Invalid geometry in get_union. Fixed.")
+                logger.error("Invalid geometry in get_union. Fixed.")
         if s and s.is_valid:
             #get rid of holes
             if type(s) in (MultiPolygon, GeometryCollection):
@@ -40,7 +42,7 @@ def get_union(geojson):
         result = cascaded_union(shapes)
     except Exception as e:
         #workaround for geos bug with cacscaded_union sometimes failing
-        logging.error("cascaded_union failed, falling back to union")
+        logger.error("cascaded_union failed, falling back to union")
         result = shapes.pop()
         for s in shapes:
             result = result.union(s)
@@ -129,7 +131,7 @@ def get_label_points(geojson, use_polylabel=True):
 
 
 def get_demo_point(geojson):
-    logging.debug("Inserting into index")
+    logger.debug("extracting geometry rings")
     geometries = []
     for feature in geojson['features']:
         if feature['geometry']['type'] == "Polygon":
@@ -143,6 +145,7 @@ def get_demo_point(geojson):
             s = LineString(ring)
             geometries.append(s)
 
+    logger.debug("Inserting into index")
     def generator_function():
         for i, obj in enumerate(geometries):
             yield (i, obj.bounds, i) #Buffer geometry so it comes up in intersection queries
@@ -151,8 +154,8 @@ def get_demo_point(geojson):
     best_tile = None
     best_tile_feature_count = 0
     envelope = shape(get_union(geojson)).bounds
-    logging.debug("Iterating tiles to find best tile")
     for tile in mercantile.tiles(envelope[0], envelope[1], envelope[2], envelope[3], [16]):
+    logger.debug("Iterating tiles to find best tile")
         tile_bounds = mercantile.bounds(tile.x, tile.y, tile.z)
         tile_features = [i for i in spatial_index.intersection(tile_bounds)]
         if len(tile_features) > best_tile_feature_count:
@@ -166,8 +169,8 @@ def get_demo_point(geojson):
                 best_tile = tile
 
     if best_tile:
-        logging.debug("best tile: " + str(best_tile) + " had " + str(best_tile_feature_count) + " features")
+        logger.debug("best tile: " + str(best_tile) + " had " + str(best_tile_feature_count) + " features")
         tile_bounds = mercantile.bounds(best_tile.x, best_tile.y, best_tile.z)
         return ((tile_bounds[0] + tile_bounds[2])/2.0, (tile_bounds[1] + tile_bounds[3])/2.0)
     else:
-        logging.error("Found 0 tiles with features")
+        logger.error("Found 0 tiles with features")
