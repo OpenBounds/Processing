@@ -154,19 +154,24 @@ def get_demo_point(geojson):
     best_tile = None
     best_tile_feature_count = 0
     envelope = shape(get_union(geojson)).bounds
-    for tile in mercantile.tiles(envelope[0], envelope[1], envelope[2], envelope[3], [16]):
     logger.debug("Iterating tiles to find best tile")
-        tile_bounds = mercantile.bounds(tile.x, tile.y, tile.z)
-        tile_features = [i for i in spatial_index.intersection(tile_bounds)]
-        if len(tile_features) > best_tile_feature_count:
-            tile_bounds_geometry = Polygon(polygon_from_bbox(tile_bounds)[0])
-            tile_feature_count = 0
-            for i in tile_features:
-                if tile_bounds_geometry.intersects(geometries[i]):
-                    tile_feature_count += 1
-            if tile_feature_count > best_tile_feature_count:
-                best_tile_feature_count = tile_feature_count
-                best_tile = tile
+
+    for zoom in range(8, 17):
+        best_tile_feature_count = 0
+        if best_tile:
+            envelope = mercantile.bounds(best_tile.x, best_tile.y, best_tile.z)
+        for tile in mercantile.tiles(envelope[0], envelope[1], envelope[2], envelope[3], [zoom]):
+            tile_bounds = mercantile.bounds(tile.x, tile.y, tile.z)
+            tile_features = [i for i in spatial_index.intersection(tile_bounds)]
+            if len(tile_features) > best_tile_feature_count:
+                tile_bounds_geometry = Polygon(polygon_from_bbox(tile_bounds)[0])
+                tile_feature_count = 0
+                for i in tile_features:
+                    if tile_bounds_geometry.intersects(geometries[i]):
+                        tile_feature_count += 1
+                if tile_feature_count > best_tile_feature_count:
+                    best_tile_feature_count = tile_feature_count
+                    best_tile = tile
 
     if best_tile:
         logger.debug("best tile: " + str(best_tile) + " had " + str(best_tile_feature_count) + " features")
