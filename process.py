@@ -5,7 +5,6 @@ import os
 from urllib.parse import urlparse
 import sys
 import zipfile 
-import traceback
 import logging
 import requests
 
@@ -141,10 +140,9 @@ def process(sources, output, force):
             }
             catalog_features.append(catalog_entry)
         except Exception as e:
-            traceback.print_exc(e)
-            failures.append(path)
             utils.error(str(e))
-            utils.error("Error processing file " + path + "\n")
+            logging.exception("Error processing file " + path + "\n")
+            failures.append(path)
             success = False
 
     catalog = {
