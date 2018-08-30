@@ -10,8 +10,7 @@ import urllib.request, urllib.error, urllib.parse
 from contextlib import closing
 import zipfile
 import tarfile
-from boto.s3.connection import S3Connection
-from urllib.parse import quote_plus
+import boto3
 
 import hashlib
 
@@ -92,7 +91,7 @@ def download(url):
     cache_path = None
     if download_cache is not None:
         cache_path = os.path.join(download_cache,
-            hashlib.sha224(url).hexdigest())
+            hashlib.sha224(url.encode()).hexdigest())
         if os.path.exists(cache_path):
             info("Returning %s from local cache at %s" % (url, cache_path))
             fp.close()
@@ -102,21 +101,16 @@ def download(url):
     s3_cache_bucket = os.getenv("S3_CACHE_BUCKET")
     s3_cache_key = None
     if s3_cache_bucket is not None:
-        s3_cache_key = os.getenv("S3_CACHE_PREFIX", "") + quote_plus(url)
-        conn = S3Connection(calling_format='boto.s3.connection.OrdinaryCallingFormat')
-        if conn is None:
-            raise Exception("Error connecting to s3")
-        bucket = conn.get_bucket(s3_cache_bucket, validate=False)
-        if bucket is None:
-            raise Exception("Error getting s3 bucket")
-
-        key = bucket.get_key(s3_cache_key)
-        if key is not None:
+        s3_cache_key = os.getenv("S3_CACHE_PREFIX", "") + hashlib.sha224(url.encode()).hexdigest()
+        s3 = boto3.client('s3')
+        try:
+            s3.download_fileobj(s3_cache_bucket, s3_cache_key, fp)
             info("Found %s in s3 cache at s3://%s/%s" % 
                 (url, s3_cache_bucket, s3_cache_key))
-            key.get_contents_to_file(fp)
             fp.close()
             return fp
+        except:
+            logging.exception("error downloading cache file from s3")
 
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
         res = requests.get(url, stream=True, verify=False)
@@ -149,8 +143,10 @@ def download(url):
     if s3_cache_key:
         info("Putting %s to s3 cache at s3://%s/%s" % 
                 (url, s3_cache_bucket, s3_cache_key))
-        key = bucket.new_key(s3_cache_key)
-        key.set_contents_from_filename(fp.name)
+        s3.upload_file(Body=tile, 
+            Bucket=s3_cache_bucket,
+            Key=s3_cache_key
+        )
 
     return fp
 
