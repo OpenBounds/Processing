@@ -2,8 +2,10 @@ from functools import partial
 
 import fiona
 from fiona.transform import transform_geom
+import pyproj
 from shapely.geometry import mapping, shape, Polygon, MultiPolygon
 from shapely.geometry.polygon import orient
+import shapely.ops as ops
 
 from property_transformation import get_transformed_properties
 import utils
@@ -105,6 +107,18 @@ def read_fiona(source, prop_map, filterer=None):
 
             feature['properties'] = get_transformed_properties(
                 feature['properties'], prop_map)
+            shapely_geometry = shape(feature['geometry'])
+            geom_aea = ops.transform(
+                partial(
+                    pyproj.transform,
+                    pyproj.Proj(init='EPSG:4326'),
+                    pyproj.Proj(
+                        proj='aea',
+                        lat1=shapely_geometry.bounds[1],
+                        lat2=shapely_geometry.bounds[3])),
+                shapely_geometry)
+
+            feature['properties']['acres'] = round(geom_aea.area / 4046.8564224)
             collection['bbox'] = [
                 comparator(values)
                 for comparator, values in zip(
