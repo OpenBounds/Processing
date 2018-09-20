@@ -110,7 +110,8 @@ def download(url):
             fp.close()
             return fp
         except:
-            logging.exception("error downloading cache file from s3")
+            pass
+#            logging.exception("error downloading cache file from s3")
 
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
         res = requests.get(url, stream=True, verify=False)
@@ -143,7 +144,7 @@ def download(url):
     if s3_cache_key:
         info("Putting %s to s3 cache at s3://%s/%s" % 
                 (url, s3_cache_bucket, s3_cache_key))
-        s3.upload_file(Body=tile, 
+        s3.upload_file(fp.name,
             Bucket=s3_cache_bucket,
             Key=s3_cache_key
         )
