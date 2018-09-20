@@ -7,7 +7,7 @@ from shapely.geometry import mapping, shape, Polygon, MultiPolygon
 from shapely.geometry.polygon import orient
 import shapely.ops as ops
 
-from property_transformation import get_transformed_properties
+from property_transformation import get_transformed_properties, PropertyMappingFailedException
 import utils
 
 def _explode(coords):
@@ -127,6 +127,9 @@ def read_fiona(source, prop_map, filterer=None):
                 )
             ]
             collection['features'].append(feature)
+        except PropertyMappingFailedException as e:
+            utils.error(str(e) + ": " + str(feature['properties']))
+            failed_count += 1
         except Exception as e:
             utils.error(str(e), "error processing feature: " + str(feature))
             failed_count += 1
