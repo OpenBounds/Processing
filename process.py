@@ -26,6 +26,9 @@ def process(sources, output, force):
     SOURCES: Source JSON file or directory of files. Required.
     OUTPUT: Destination directory for generated data. Required.
     """
+    logging.basicConfig(level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] - %(message)s', datefmt="%H:%M:%S")
+
     logging.getLogger('shapely.geos').setLevel(logging.WARNING)
     logging.getLogger('Fiona').setLevel(logging.WARNING)
     logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
@@ -38,7 +41,7 @@ def process(sources, output, force):
     success = True
     for path in utils.get_files(sources):
         try:
-            utils.info("Processing " + path)
+            logging.info("Processing " + path)
             pathparts = utils.get_path_parts(path)
             pathparts[0] = output.strip(os.sep)
             pathparts[-1] = pathparts[-1].replace('.json', '.geojson')
@@ -50,28 +53,27 @@ def process(sources, output, force):
             urlfile = urlparse(source['url']).path.split('/')[-1]
     
             if not hasattr(adapters, source['filetype']):
-                utils.error('Unknown filetype', source['filetype'], '\n')
+                logging.error('Unknown filetype ' + source['filetype'])
                 failures.append(path)
                 continue
     
             if os.path.isfile(outfile) and \
                 os.path.getmtime(outfile) > os.path.getmtime(path) and not force:
-                utils.error('Skipping', path, 'since generated file exists.',
-                            'Use --force to regenerate.', '\n')
+                logging.warning('Skipping ' + path + ' since generated file exists. Use --force to regenerate.')
                 with open(outfile, "rb") as f:
                     geojson = json.load(f)
                 properties = geojson['properties']
             else:
-                utils.info('Downloading', source['url'])
+                logging.info('Downloading ' + source['url'])
     
                 try:
                     fp = utils.download(source['url'])
                 except IOError:
-                    utils.error('Failed to download', source['url'], '\n')
+                    logging.error('Failed to download ' + source['url'])
                     failures.append(path)
                     continue
     
-                utils.info('Reading', urlfile)
+                logging.info('Reading ' + urlfile)
     
                 if 'filter' in source:
                     filterer = BasicFilterer(source['filter'], source.get('filterOperator', 'and'))
@@ -85,23 +87,23 @@ def process(sources, output, force):
                             layer_name=source.get("layerName", None),
                             source_filename=source.get("filenameInZip", None))
                 except IOError as e:
-                    utils.error('Failed to read', urlfile, str(e))
+                    logging.error('Failed to read ' + urlfile + " " + str(e))
                     failures.append(path)
                     continue
                 except zipfile.BadZipfile as e:
-                    utils.error('Unable to open zip file', source['url'])
+                    logging.error('Unable to open zip file ' + source['url'])
                     failures.append(path)
                     continue
                 finally:
                     os.remove(fp.name)
                 if(len(geojson['features'])) == 0:
-                    utils.error("Result contained no features for " + path)
+                    logging.error("Result contained no features for " + path)
                     continue
                 excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
                 properties = {k:v for k,v in list(source.items()) if k not in excluded_keys}
                 properties['source_url'] = source['url']
                 properties['feature_count'] = len(geojson['features'])
-                utils.info("Generating demo point")
+                logging.info("Generating demo point")
                 properties['demo'] = geoutils.get_demo_point(geojson)
                 
                 geojson['properties'] = properties
@@ -115,19 +117,19 @@ def process(sources, output, force):
                         to_remove = list(pathparts[:-1])
                         to_remove.append(name)
                         to_remove = os.sep.join(to_remove)
-                        utils.info("Removing generated file " + to_remove)
+                        logging.info("Removing generated file " + to_remove)
                         os.remove(to_remove)
 
                 utils.write_json(outfile, geojson)
 
-                utils.info("Generating label points")
+                logging.info("Generating label points")
                 label_geojson = geoutils.get_label_points(geojson)
                 label_pathparts = list(pathparts)
                 label_pathparts[-1] = label_pathparts[-1].replace('.geojson', '.labels.geojson')
                 label_path = os.sep.join(label_pathparts)
                 utils.write_json(label_path, label_geojson)
 
-                utils.success('Done. Processed to', outfile, '\n')
+                logging.info('Done. Processed to ' + outfile)
     
             if not "demo" in properties:
                 properties['demo'] = geoutils.get_demo_point(geojson)
@@ -140,8 +142,8 @@ def process(sources, output, force):
             }
             catalog_features.append(catalog_entry)
         except Exception as e:
-            utils.error(str(e))
-            logging.exception("Error processing file " + path + "\n")
+            logging.error(str(e))
+            logging.exception("Error processing file " + path)
             failures.append(path)
             success = False
 
@@ -152,7 +154,7 @@ def process(sources, output, force):
     utils.write_json(os.path.join(output,'catalog.geojson'), catalog)
 
     if not success:
-        utils.error("Failed sources: " + ", ".join(failures))
+        logging.error("Failed sources: " + ", ".join(failures))
         sys.exit(-1)
 
 if __name__ == '__main__':

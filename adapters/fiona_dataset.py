@@ -1,4 +1,5 @@
 from functools import partial
+import logging
 
 import fiona
 from fiona.transform import transform_geom
@@ -97,7 +98,7 @@ def read_fiona(source, prop_map, filterer=None):
             skipped_count += 1
             continue
         if feature['geometry'] is None:
-            utils.error("empty geometry")
+            logging.error("empty geometry")
             failed_count += 1
             continue
         try:
@@ -128,17 +129,17 @@ def read_fiona(source, prop_map, filterer=None):
             ]
             collection['features'].append(feature)
         except PropertyMappingFailedException as e:
-            utils.error(str(e) + ": " + str(feature['properties']))
+            logging.error(str(e) + ": " + str(feature['properties']))
             failed_count += 1
         except Exception as e:
-            utils.error(str(e), "error processing feature: " + str(feature))
+            logging.error(str(e), "error processing feature: " + str(feature))
             failed_count += 1
 
     #avoid math error if there are no features
     if len(collection['features']) == 0:
         del collection['bbox']
 
-    utils.info("skipped %i features, kept %i features, errored %i features" % 
+    logging.info("skipped %i features, kept %i features, errored %i features" % 
         (skipped_count, len(collection['features']), failed_count))
 
     return collection
