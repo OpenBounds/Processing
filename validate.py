@@ -3,6 +3,7 @@
 import json
 import re
 import sys
+import logging
 
 import click
 import jsonschema
@@ -27,14 +28,14 @@ def validate(schema, jsonfiles):
             try:
                 jsonfile = json.loads(f.read())
             except ValueError:
-                utils.error("Error loading json file " + path)
+                logging.error("Error loading json file " + path)
                 raise Exception("Invalid json file")
         try:
             jsonschema.validate(jsonfile, schema)
         except Exception as e:
             success = False
-            utils.error("Error validating file " + path)
-            utils.error(str(e))
+            logging.error("Error validating file " + path)
+            logging.error(str(e))
 
     if not success:
         sys.exit(-1)

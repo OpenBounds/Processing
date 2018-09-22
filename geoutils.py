@@ -22,7 +22,7 @@ def get_union(geojson):
             if not s.is_valid:
                 logger.error("Invalid geometry in get_union, failed to fix")
             else: 
-                logger.error("Invalid geometry in get_union. Fixed.")
+                logger.warning("Invalid geometry in get_union. Fixed.")
         if s and s.is_valid:
             #get rid of holes
             if type(s) in (MultiPolygon, GeometryCollection):
@@ -82,10 +82,10 @@ def get_label_points(geojson, use_polylabel=True):
         try:
             from shapely.algorithms.polylabel import polylabel
         except:
-            utils.error("Polylabel not available, using centroid for label points")
+            logging.error("Polylabel not available, using centroid for label points")
             polylabel = None
     else:
-        utils.error("using centroid for label points, Polylabel disabled")
+        logging.error("using centroid for label points, Polylabel disabled")
         polylabel = None
 
     label_features = []

@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import utils 
+import logging
 
 @click.command()
 @click.argument('output', required=True, type=click.Path(exists=False))
@@ -29,7 +30,7 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
     """
 
     if os.path.exists(output):
-        utils.error("Error, output path already exists")
+        logging.error("Error, output path already exists")
         sys.exit(-1)
 
     if catalog:
@@ -44,7 +45,7 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
                   os.path.basename(item) != 'catalog.geojson':
                     source_paths.append(item)
 
-    utils.info("{} geojson files found".format(len(source_paths)))
+    logging.info("{} geojson files found".format(len(source_paths)))
 
     command = (
         'tippecanoe -o ' + output + 
@@ -55,7 +56,7 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
         ' -l ' + layer + # force to use a single layer
         ' -z {} -Z {}'.format(max_zoom, min_zoom)
     )
-    utils.info(command)
+    logging.info(command)
     subprocess.call(command,shell=True)
 
 if __name__ == '__main__':

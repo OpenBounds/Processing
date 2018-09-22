@@ -19,9 +19,6 @@ import requests
 
 CHUNK_SIZE = 1024
 
-logging.basicConfig(level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] - %(message)s', datefmt="%H:%M:%S")
-
 
 def get_files(path):
     """Returns an iterable containing the full path of all files in the
@@ -93,7 +90,7 @@ def download(url):
         cache_path = os.path.join(download_cache,
             hashlib.sha224(url.encode()).hexdigest())
         if os.path.exists(cache_path):
-            info("Returning %s from local cache at %s" % (url, cache_path))
+            logging.info("Returning %s from local cache at %s" % (url, cache_path))
             fp.close()
             shutil.copy(cache_path, fp.name)
             return fp
@@ -105,7 +102,7 @@ def download(url):
         s3 = boto3.client('s3')
         try:
             s3.download_fileobj(s3_cache_bucket, s3_cache_key, fp)
-            info("Found %s in s3 cache at s3://%s/%s" % 
+            logging.info("Found %s in s3 cache at s3://%s/%s" % 
                 (url, s3_cache_bucket, s3_cache_key))
             fp.close()
             return fp
@@ -142,7 +139,7 @@ def download(url):
         shutil.copy(fp.name, cache_path)
 
     if s3_cache_key:
-        info("Putting %s to s3 cache at s3://%s/%s" % 
+        logging.info("Putting %s to s3 cache at s3://%s/%s" % 
                 (url, s3_cache_bucket, s3_cache_key))
         s3.upload_file(fp.name,
             Bucket=s3_cache_bucket,
@@ -150,27 +147,6 @@ def download(url):
         )
 
     return fp
-
-forceLogging = True
-def info(*strings):
-    if not forceLogging and sys.stdout.isatty():
-        click.echo(' '.join(strings))
-    else:
-        logging.info(' '.join(strings))
-
-
-def error(*strings):
-    if not forceLogging and sys.stdout.isatty():
-        click.secho(' '.join(strings), fg='red')
-    else:
-        logging.error(' '.join(strings))
-
-
-def success(*strings):
-    if not forceLogging and sys.stdout.isatty():
-        click.secho(' '.join(strings), fg='green')
-    else:
-        logging.info(' '.join(strings))
 
 
 class ZipCompatibleTarFile(tarfile.TarFile):

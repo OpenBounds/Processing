@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+import logging
+
 from urllib.parse import urlparse
 import sqlite3
 from multiprocessing.pool import ThreadPool
@@ -54,7 +56,7 @@ def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, re
         if progress and upload_count % 10 == 0:
             print("%i/%i" % (upload_count, tile_count))
     except Exception as e:
-        utils.error(str(e))
+        logging.error(str(e))
         if retries < 2:
             upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=progress, retries=retries + 1)
         else:
