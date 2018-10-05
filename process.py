@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
-import json
-import os
+from shutil import rmtree
 from urllib.parse import urlparse
+import datetime
+import json
+import logging
+import os
+import requests
 import sys
 import zipfile 
-import logging
-import requests
 
 import click
 
@@ -37,18 +39,17 @@ def process(sources, output, force):
 
     catalog_features = []
     failures = []
-    path_parts_to_skip = len(utils.get_path_parts(output))
+    path_parts_to_skip = utils.get_path_parts(sources).index("sources") + 1
     success = True
     for path in utils.get_files(sources):
         try:
             logging.info("Processing " + path)
-            pathparts = utils.get_path_parts(path)
-            pathparts[0] = output.strip(os.sep)
+            pathparts = utils.get_path_parts(path)[path_parts_to_skip:]
             pathparts[-1] = pathparts[-1].replace('.json', '.geojson')
-    
-            outdir = os.sep.join(pathparts[:-1])
-            outfile = os.sep.join(pathparts)
-    
+
+            outdir = os.path.join(output, *pathparts[:-1], pathparts[-1].replace('.geojson', ''))
+            outfile = os.path.join(output, *pathparts)
+
             source = utils.read_json(path)
             urlfile = urlparse(source['url']).path.split('/')[-1]
     
@@ -57,9 +58,20 @@ def process(sources, output, force):
                 failures.append(path)
                 continue
     
-            if os.path.isfile(outfile) and \
-                os.path.getmtime(outfile) > os.path.getmtime(path) and not force:
-                logging.warning('Skipping ' + path + ' since generated file exists. Use --force to regenerate.')
+            read_existing = False
+            if os.path.isfile(outfile):
+                logging.info("Output file exists")
+                if os.path.getmtime(outfile) > os.path.getmtime(path):
+                    logging.info("Output file is up to date")
+                    if not force:
+                        read_existing = True
+                        logging.warning('Skipping ' + path + ' since generated file exists. Use --force to regenerate.')                    
+                else:
+                    logging.info("Output is outdated, {} < {}".format(
+                        datetime.datetime.fromtimestamp(os.path.getmtime(outfile)),
+                        datetime.datetime.fromtimestamp(os.path.getmtime(path))))
+
+            if read_existing:
                 with open(outfile, "rb") as f:
                     geojson = json.load(f)
                 properties = geojson['properties']
@@ -108,15 +120,18 @@ def process(sources, output, force):
                 
                 geojson['properties'] = properties
     
-                utils.make_sure_path_exists(outdir)
+                utils.make_sure_path_exists(os.path.dirname(outfile))
 
+                #cleanup existing generated files
+                if os.path.exists(outdir):
+                    rmtree(outdir)
                 filename_to_match, ext = os.path.splitext(pathparts[-1])
-                for name in os.listdir(os.sep.join(pathparts[:-1])):
-                    base = name.split(".")[0]
+                output_file_dir = os.sep.join(utils.get_path_parts(outfile)[:-1])
+                logging.info("looking for generated files to delete in " + output_file_dir)
+                for name in os.listdir(output_file_dir):
+                    base, ext = os.path.splitext(name)
                     if base == filename_to_match:
-                        to_remove = list(pathparts[:-1])
-                        to_remove.append(name)
-                        to_remove = os.sep.join(to_remove)
+                        to_remove = os.path.join(output_file_dir, name)
                         logging.info("Removing generated file " + to_remove)
                         os.remove(to_remove)
 
@@ -124,9 +139,7 @@ def process(sources, output, force):
 
                 logging.info("Generating label points")
                 label_geojson = geoutils.get_label_points(geojson)
-                label_pathparts = list(pathparts)
-                label_pathparts[-1] = label_pathparts[-1].replace('.geojson', '.labels.geojson')
-                label_path = os.sep.join(label_pathparts)
+                label_path = outfile.replace('.geojson', '.labels.geojson')
                 utils.write_json(label_path, label_geojson)
 
                 logging.info('Done. Processed to ' + outfile)
@@ -134,7 +147,7 @@ def process(sources, output, force):
             if not "demo" in properties:
                 properties['demo'] = geoutils.get_demo_point(geojson)
 
-            properties['path'] = "/".join(pathparts[path_parts_to_skip:])
+            properties['path'] = "/".join(pathparts)
             catalog_entry = {
                 'type': 'Feature',
                 'properties': properties,
