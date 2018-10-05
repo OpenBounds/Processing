@@ -154,6 +154,20 @@ def process(sources, output, force):
                 'geometry': geoutils.get_union(geojson)
             }
             catalog_features.append(catalog_entry)
+
+            if not os.path.exists(outdir):
+                logging.info("Generated exploded GeoJSON to " + outdir)
+                os.makedirs(outdir)
+                # .json instead of .geojson, incase there is a unit named "source"
+                utils.write_json(os.path.join(outdir, "source.json"), catalog_entry) 
+                for feature in geojson['features']:
+                    feature_id = str(feature['properties']['id'])
+                    feature_id = feature_id.replace('/', '')
+                    feature_filename = os.path.join(outdir, feature_id + ".geojson")
+                    utils.write_json(feature_filename, feature)
+            else:
+                logging.debug("exploded GeoJSON already exists, not generating")
+
         except Exception as e:
             logging.error(str(e))
             logging.exception("Error processing file " + path)
