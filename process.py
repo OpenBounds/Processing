@@ -155,16 +155,20 @@ def process(sources, output, force):
             }
             catalog_features.append(catalog_entry)
 
-            if not os.path.exists(outdir):
+            if not os.path.exists(outdir) or not os.path.exists(os.path.join(outdir, "units.json")):
                 logging.info("Generated exploded GeoJSON to " + outdir)
-                os.makedirs(outdir)
+                if not os.path.exists(outdir):
+                    os.makedirs(outdir)
                 # .json instead of .geojson, incase there is a unit named "source"
                 utils.write_json(os.path.join(outdir, "source.json"), catalog_entry) 
+                units = []
                 for feature in geojson['features']:
                     feature_id = str(feature['properties']['id'])
                     feature_id = feature_id.replace('/', '')
                     feature_filename = os.path.join(outdir, feature_id + ".geojson")
                     utils.write_json(feature_filename, feature)
+                    units.append(feature['properties'])
+                utils.write_json(os.path.join(outdir, "units.json"), units)
             else:
                 logging.debug("exploded GeoJSON already exists, not generating")
 
