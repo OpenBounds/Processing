@@ -102,17 +102,21 @@ def get_label_points(geojson, use_polylabel=True):
 
         for geometry in geometries:
             if polylabel and geometry.is_valid: #polylabel doesnt work on invalid geometries, centroid does
-                project = partial(
-                    pyproj.transform,
-                    pyproj.Proj(init='epsg:4326'),
-                    pyproj.Proj(init='epsg:3857'))
-                geometry_3857 = transform(project, geometry)
-                label_geometry_3857 = polylabel(geometry_3857)
-                project = partial(
-                    pyproj.transform,
-                    pyproj.Proj(init='epsg:3857'),
-                    pyproj.Proj(init='epsg:4326'))
-                label_geometry = transform(project, label_geometry_3857)  # apply projection
+                try:
+                    project = partial(
+                        pyproj.transform,
+                        pyproj.Proj(init='epsg:4326'),
+                        pyproj.Proj(init='epsg:3857'))
+                    geometry_3857 = transform(project, geometry)
+                    label_geometry_3857 = polylabel(geometry_3857)
+                    project = partial(
+                        pyproj.transform,
+                        pyproj.Proj(init='epsg:3857'),
+                        pyproj.Proj(init='epsg:4326'))
+                    label_geometry = transform(project, label_geometry_3857)  # apply projection
+                except Exception as e:
+                    logger.error("Error getting polylabel point for feature: " + str(feature['properties']), exc_info=e)
+                    label_geometry = geometry.centroid
             else:
                 label_geometry = geometry.centroid
 
