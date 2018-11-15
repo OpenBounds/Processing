@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import logging
-
-from urllib.parse import urlparse
-import sqlite3
-from multiprocessing.pool import ThreadPool
 from functools import partial
+from multiprocessing.pool import ThreadPool
+from urllib.parse import urlparse
+import json
+import logging
+import os
+import sqlite3
 
 import boto3
 import click
@@ -39,6 +39,30 @@ class MBTilesGenerator(object):
         zoom, x, y, tile = row
         y  = ((1 << zoom) - y) - 1;
         return zoom, x, y, tile
+
+
+def get_tile_json(mbtiles, bucket, key_template):
+    db = sqlite3.connect(mbtiles)
+    cursor = db.cursor()
+    cursor.execute("SELECT name, value FROM metadata")
+    tilejson = {
+        "tilejson": "2.2.0",
+        "scheme": "xyz",
+        "tiles": [
+            "https://s3.amazonaws.com/{}/{}".format(bucket, key_template)
+        ]
+    }
+    for key, value in cursor.fetchall():
+        if key == "json":
+            data = json.loads(value)
+            tilejson.update(data)
+        else:
+            if key in ("center", "bounds"):
+                value = [float(s) for s in value.split(",")]
+            elif key in ("minzoom", "maxzoom"):
+                value = int(value)
+            tilejson[key] = value
+    return tilejson
 
 
 def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, retries=0):
@@ -122,6 +146,15 @@ def upload(mbtiles, s3_url, threads, extension, header):
     func = partial(upload_tile, s3, bucket, key_template, headers)
     pool.map(func, tiles)
 
+    tilejson_key = "{}/index.json".format(key_prefix.strip("/"))
+    print("uploading tilejson to s3://%s/%s" % (bucket, tilejson_key))
+    tilejson_data = get_tile_json(mbtiles, bucket, key_template)
+    tilejson_json = json.dumps(tilejson_data, indent=4, sort_keys=True)
+    s3.put_object(Body=json.dumps(tilejson_data), 
+        Bucket=bucket,
+        Key=tilejson_key, 
+        ContentType="application/json"
+    )
 
 if __name__ == '__main__':
     upload()
