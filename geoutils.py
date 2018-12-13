@@ -135,6 +135,7 @@ def get_label_points(geojson, use_polylabel=True):
 
 
 def get_demo_point(geojson):
+    logging.debug("Generating demo point")
     logger.debug("extracting geometry rings")
     geometries = []
     for feature in geojson['features']:
@@ -183,3 +184,67 @@ def get_demo_point(geojson):
         return ((tile_bounds[0] + tile_bounds[2])/2.0, (tile_bounds[1] + tile_bounds[3])/2.0)
     else:
         logger.error("Found 0 tiles with features")
+
+
+def _explode(coords):
+    """Explode a GeoJSON geometry's coordinates object and
+    yield coordinate tuples. As long as the input is conforming,
+    the type of the geometry doesn't matter.
+
+    From @sgillies answer: http://gis.stackexchange.com/a/90554/27367
+    """
+    for e in coords:
+        if isinstance(e, (float, int)):
+            yield coords
+            break
+        else:
+            for f in _explode(e):
+                yield f
+
+
+def get_bbox_from_geojson_feature(feature):
+    """ Generate a bounding box for GeoJson Feature
+    :param geojson: GeoJSON Feature
+    :returns: a 4 float bounding box, ESWN
+    """
+    return get_bbox_from_geojson_geometry(feature['geometry'])
+
+
+def get_bbox_from_geojson_geometry(geometry):
+    """ Generate a bounding box for GeoJson Geometry
+    :param geojson: GeoJSON Geometry
+    :returns: a 4 float bounding box, ESWN
+     """
+    x, y = list(zip(*list(_explode(geometry['coordinates']))))
+    return min(x), min(y), max(x), max(y)
+
+
+def get_bbox_from_geojson(geojson):
+    """ Generate a bounding box for GeoJson
+    :param geojson: Either a GeoJson Feature or FeatureCollection
+    :returns: a 4 float bounding box, ESWN
+     """
+    if geojson['type'] == 'Feature':
+        features = [geojson]
+    elif geojson['type'] == 'FeatureCollection':
+        features = geojson['features']
+    else:
+        raise Exception("GeoJson type was not Feature or FeatureCollection")
+
+    if len(features) == 0:
+        return None
+    elif len(features) == 1:
+        return get_bbox_from_geojson_geometry(feature['geometry'])
+
+    feature_bboxes = []
+    for feature in features:
+        if 'bbox' in feature:
+            feature_bbox = feature['bbox']
+        else:
+            feature_bbox = get_bbox_from_geojson_geometry(feature['geometry'])
+        feature_bboxes.append(feature_bbox)
+
+    return min([b[0] for b in feature_bboxes]), \
+        min([b[1] for b in feature_bboxes]), \
+        max([b[2] for b in feature_bboxes]), \
+        max([b[3] for b in feature_bboxes])

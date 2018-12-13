@@ -10,26 +10,7 @@ import shapely.ops as ops
 
 from property_transformation import get_transformed_properties, PropertyMappingFailedException
 import utils
-
-def _explode(coords):
-    """Explode a GeoJSON geometry's coordinates object and
-    yield coordinate tuples. As long as the input is conforming,
-    the type of the geometry doesn't matter.
-
-    From @sgillies answer: http://gis.stackexchange.com/a/90554/27367
-    """
-    for e in coords:
-        if isinstance(e, (float, int)):
-            yield coords
-            break
-        else:
-            for f in _explode(e):
-                yield f
-
-
-def _bbox(feat):
-    x, y = list(zip(*list(_explode(feat['geometry']['coordinates']))))
-    return min(x), min(y), max(x), max(y)
+import geoutils
 
 def _force_geometry_2d(geometry):
     """ Convert a geometry to 2d
@@ -120,13 +101,7 @@ def read_fiona(source, prop_map, filterer=None):
                 shapely_geometry)
 
             feature['properties']['acres'] = round(geom_aea.area / 4046.8564224)
-            collection['bbox'] = [
-                comparator(values)
-                for comparator, values in zip(
-                    [min, min, max, max],
-                    list(zip(collection['bbox'], _bbox(feature)))
-                )
-            ]
+            feature['bbox'] = geoutils.get_bbox_from_geojson_feature(feature)
             collection['features'].append(feature)
         except PropertyMappingFailedException as e:
             logging.error(str(e) + ": " + str(feature['properties']))
@@ -135,9 +110,8 @@ def read_fiona(source, prop_map, filterer=None):
             logging.error(str(e), "error processing feature: " + str(feature))
             failed_count += 1
 
-    #avoid math error if there are no features
-    if len(collection['features']) == 0:
-        del collection['bbox']
+    if len(collection['features']) > 0:
+        collection['bbox'] = geoutils.get_bbox_from_geojson(collection)
 
     logging.info("skipped %i features, kept %i features, errored %i features" % 
         (skipped_count, len(collection['features']), failed_count))

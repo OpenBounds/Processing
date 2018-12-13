@@ -111,15 +111,17 @@ def process(sources, output, force):
                 if(len(geojson['features'])) == 0:
                     logging.error("Result contained no features for " + path)
                     continue
+
+                #generate properties
                 excluded_keys = ['filetype', 'url', 'properties', 'filter', 'filenameInZip']
                 properties = {k:v for k,v in list(source.items()) if k not in excluded_keys}
                 properties['source_url'] = source['url']
                 properties['feature_count'] = len(geojson['features'])
-                logging.info("Generating demo point")
                 properties['demo'] = geoutils.get_demo_point(geojson)
-                
                 geojson['properties'] = properties
-    
+                if 'bbox' not in geojson:
+                    geojson['bbox'] = geoutils.get_bbox_from_geojson(geojson)
+
                 utils.make_sure_path_exists(os.path.dirname(outfile))
 
                 #cleanup existing generated files
@@ -151,23 +153,31 @@ def process(sources, output, force):
             catalog_entry = {
                 'type': 'Feature',
                 'properties': properties,
-                'geometry': geoutils.get_union(geojson)
+                'geometry': geoutils.get_union(geojson),
+                'bbox': geoutils.get_bbox_from_geojson(geojson)
             }
             catalog_features.append(catalog_entry)
 
-            if not os.path.exists(outdir) or not os.path.exists(os.path.join(outdir, "units.json")):
+            if not read_existing \
+                or not os.path.exists(outdir) \
+                or not os.path.exists(os.path.join(outdir, "units.json")) \
+                or not os.path.exists(os.path.join(outdir, "source.json")):
                 logging.info("Generated exploded GeoJSON to " + outdir)
                 if not os.path.exists(outdir):
                     os.makedirs(outdir)
-                # .json instead of .geojson, incase there is a unit named "source"
-                utils.write_json(os.path.join(outdir, "source.json"), catalog_entry) 
                 units = []
                 for feature in geojson['features']:
+                    if not 'bbox' in feature:
+                        feature['bbox'] = geoutils.get_bbox_from_geojson_geometry(feature['geometry'])
                     feature_id = str(feature['properties']['id'])
                     feature_id = feature_id.replace('/', '')
                     feature_filename = os.path.join(outdir, feature_id + ".geojson")
                     utils.write_json(feature_filename, feature)
                     units.append(feature['properties'])
+                # source.json is just the catalog entry
+                # units.json is the properties dicts from all of the units in an array
+                # .json instead of .geojson, incase there is a unit named "source"
+                utils.write_json(os.path.join(outdir, "source.json"), catalog_entry) 
                 utils.write_json(os.path.join(outdir, "units.json"), units)
             else:
                 logging.debug("exploded GeoJSON already exists, not generating")
