@@ -225,23 +225,31 @@ def get_bbox_from_geojson(geojson):
     :returns: a 4 float bounding box, ESWN
      """
     if geojson['type'] == 'Feature':
-        features = [geojson]
+        return get_bbox_from_geojson_feature(geojson)
     elif geojson['type'] == 'FeatureCollection':
-        features = geojson['features']
+        return get_bbox_from_geojson_feature_collection(geojson)
     else:
         raise Exception("GeoJson type was not Feature or FeatureCollection")
 
+
+def get_bbox_from_geojson_feature_collection(geojson):
+    """ Generate a bounding box for GeoJson FeatureCollection
+    :param geojson: a GeoJson FeatureCollection
+    :returns: a 4 float bounding box, ESWN
+     """
+
+    features = geojson['features']
     if len(features) == 0:
         return None
     elif len(features) == 1:
-        return get_bbox_from_geojson_geometry(feature['geometry'])
+        return get_bbox_from_geojson_feature(features[0])
 
     feature_bboxes = []
     for feature in features:
         if 'bbox' in feature:
             feature_bbox = feature['bbox']
         else:
-            feature_bbox = get_bbox_from_geojson_geometry(feature['geometry'])
+            feature_bbox = get_bbox_from_geojson_feature(feature)
         feature_bboxes.append(feature_bbox)
 
     return min([b[0] for b in feature_bboxes]), \
