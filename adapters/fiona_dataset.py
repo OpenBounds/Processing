@@ -101,6 +101,9 @@ def read_fiona(source, prop_map, filterer=None):
                 shapely_geometry)
 
             feature['properties']['acres'] = round(geom_aea.area / 4046.8564224)
+            if 'id' in feature['properties']:
+                feature['id'] = feature['properties']['id']
+
             feature['bbox'] = geoutils.get_bbox_from_geojson_feature(feature)
             collection['features'].append(feature)
         except PropertyMappingFailedException as e:
