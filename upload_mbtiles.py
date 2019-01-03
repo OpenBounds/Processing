@@ -96,7 +96,8 @@ def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, re
     help="File extension for tiles")
 @click.option('--header', '-h', multiple=True,
     help="Additional headers")
-def upload(mbtiles, s3_url, threads, extension, header):
+@click.option('--debug', '-d', default=False, help="Debug level logging", is_flag=True)
+def upload(mbtiles, s3_url, threads, extension, header, debug):
     """Upload tiles from an MBTiles file to S3.
 
     \b
@@ -104,6 +105,9 @@ def upload(mbtiles, s3_url, threads, extension, header):
         mbtiles: Path to an MBTiles file
         s3_url: url to an s3 bucket to upload tiles to
     """
+    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+    logging.getLogger("botocore.credentials").setLevel(logging.getLevelName('ERROR'))
+
     base_url = urlparse(s3_url)
 
     s3 = boto3.client('s3')
