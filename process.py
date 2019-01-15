@@ -21,7 +21,8 @@ import geoutils
 @click.argument('sources', type=click.Path(exists=True), required=True)
 @click.argument('output', type=click.Path(exists=True), required=True)
 @click.option('--force', is_flag=True)
-def process(sources, output, force):
+@click.option('--force-summary', is_flag=True)
+def process(sources, output, force, force_summary):
     """Download sources and process the file to the output directory.
 
     \b
@@ -158,7 +159,8 @@ def process(sources, output, force):
             }
             catalog_features.append(catalog_entry)
 
-            if not read_existing \
+            if force_summary or \
+                not read_existing \
                 or not os.path.exists(outdir) \
                 or not os.path.exists(os.path.join(outdir, "units.json")) \
                 or not os.path.exists(os.path.join(outdir, "source.json")):

@@ -48,7 +48,7 @@ def read_json(path):
 
 def write_json(path, data):
     with open(path, 'w') as jsonfile:
-        jsonfile.write(ujson.dumps(data, double_precision=5))
+        jsonfile.write(ujson.dumps(data, escape_forward_slashes=False, double_precision=5))
 
 
 def make_sure_path_exists(path):

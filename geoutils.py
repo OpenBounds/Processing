@@ -22,7 +22,8 @@ def get_union(geojson):
             if not s.is_valid:
                 logger.error("Invalid geometry in get_union, failed to fix")
             else: 
-                logger.warning("Invalid geometry in get_union. Fixed.")
+                pass
+#                logger.warning("Invalid geometry in get_union. Fixed.")
         if s and s.is_valid:
             #get rid of holes
             if type(s) in (MultiPolygon, GeometryCollection):

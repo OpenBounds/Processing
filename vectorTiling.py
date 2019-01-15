@@ -50,6 +50,7 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
     command = (
         'tippecanoe -o ' + output + 
         ' ' + " ".join(source_paths) + 
+        ' --no-progress-indicator ' +
         ' --no-polygon-splitting ' +
         '--coalesce --reverse --reorder ' + # try really hard to coalesce polygons with the same properties
         '--detect-shared-borders ' + # Avoid small gaps between polygons when simplifying
@@ -60,6 +61,4 @@ def vectorTiling(output, sources, catalog, min_zoom, max_zoom, layer):
     subprocess.call(command,shell=True)
 
 if __name__ == '__main__':
-
     vectorTiling()
-    
