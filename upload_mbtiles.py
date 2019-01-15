@@ -13,6 +13,7 @@ import click
 
 import utils
 
+upload_progress_interval = 100
 tile_count = 0
 upload_count = 0 
 
@@ -77,7 +78,7 @@ def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, re
         )
         global upload_count
         upload_count += 1
-        if progress and upload_count % 10 == 0:
+        if progress and upload_count % upload_progress_interval == 0:
             print("%i/%i" % (upload_count, tile_count))
     except Exception as e:
         logging.error(str(e))
@@ -96,8 +97,10 @@ def upload_tile(s3, bucket, key_template, headers, tile_stuff, progress=True, re
     help="File extension for tiles")
 @click.option('--header', '-h', multiple=True,
     help="Additional headers")
+@click.option('--progress', '-p', default=False, is_flag=True,
+    help="Show upload progress")
 @click.option('--debug', '-d', default=False, help="Debug level logging", is_flag=True)
-def upload(mbtiles, s3_url, threads, extension, header, debug):
+def upload(mbtiles, s3_url, threads, extension, header, progress, debug):
     """Upload tiles from an MBTiles file to S3.
 
     \b
@@ -107,6 +110,8 @@ def upload(mbtiles, s3_url, threads, extension, header, debug):
     """
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logging.getLogger("botocore.credentials").setLevel(logging.getLevelName('ERROR'))
+    logging.getLogger("botocore.vendored.requests.packages.urllib3.connectionpool").setLevel(logging.getLevelName('ERROR'))
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.getLevelName('ERROR'))
 
     base_url = urlparse(s3_url)
 
@@ -147,7 +152,7 @@ def upload(mbtiles, s3_url, threads, extension, header, debug):
     key_template = key_prefix + "{z}/{x}/{y}" + extension
     print("uploading tiles from %s to s3://%s/%s" % (mbtiles, bucket, key_template))
     pool = ThreadPool(threads)
-    func = partial(upload_tile, s3, bucket, key_template, headers)
+    func = partial(upload_tile, s3, bucket, key_template, headers, progress=progress)
     pool.map(func, tiles)
 
     tilejson_key = "{}/index.json".format(key_prefix.strip("/"))
