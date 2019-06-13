@@ -2,18 +2,19 @@ import logging
 from functools import partial
 
 import fiona
-import geoutils
 import pyproj
 import shapely.ops as ops
-import utils
 from fiona.transform import transform_geom
-from property_transformation import get_transformed_properties
-from property_transformation import PropertyMappingFailedException
 from shapely.geometry import mapping
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Polygon
 from shapely.geometry import shape
 from shapely.geometry.polygon import orient
+
+import geoutils
+import utils
+from property_transformation import get_transformed_properties
+from property_transformation import PropertyMappingFailedException
 
 
 def _force_geometry_2d(geometry):
@@ -103,21 +104,9 @@ def read_fiona(source, prop_map, filterer=None):
             feature["properties"] = get_transformed_properties(
                 feature["properties"], prop_map
             )
-            shapely_geometry = shape(feature["geometry"])
-            geom_aea = ops.transform(
-                partial(
-                    pyproj.transform,
-                    pyproj.Proj(init="EPSG:4326"),
-                    pyproj.Proj(
-                        proj="aea",
-                        lat1=shapely_geometry.bounds[1],
-                        lat2=shapely_geometry.bounds[3],
-                    ),
-                ),
-                shapely_geometry,
+            feature["properties"]["acres"] = geoutils.get_area_acres(
+                feature["geometry"]
             )
-
-            feature["properties"]["acres"] = round(geom_aea.area / 4046.8564224)
             if "id" in feature["properties"]:
                 feature["id"] = feature["properties"]["id"]
 
@@ -127,7 +116,7 @@ def read_fiona(source, prop_map, filterer=None):
             logging.error(str(e) + ": " + str(feature["properties"]))
             failed_count += 1
         except Exception as e:
-            logging.error(str(e), "error processing feature: " + str(feature))
+            logging.exception("Error processing feature: " + str(feature))
             failed_count += 1
 
     if len(collection["features"]) > 0:

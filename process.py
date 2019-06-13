@@ -8,12 +8,14 @@ import zipfile
 from shutil import rmtree
 from urllib.parse import urlparse
 
-import adapters
 import click
-import geoutils
 import requests
+
+import adapters
+import geoutils
 import utils
 from filters import BasicFilterer
+from merge import merge_features
 
 
 @click.command()
@@ -126,9 +128,13 @@ def process(sources, output, force, force_summary):
                     continue
                 finally:
                     os.remove(fp.name)
+
                 if (len(geojson["features"])) == 0:
                     logging.error("Result contained no features for " + path)
                     continue
+
+                if "mergeOn" in source:
+                    geojson = merge_features(geojson, source["mergeOn"])
 
                 # generate properties
                 excluded_keys = [
