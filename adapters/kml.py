@@ -1,4 +1,3 @@
-
 def read(fp, prop_map, source_filename=None):
     """Read KML or KMZ file.
 

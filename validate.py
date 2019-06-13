@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-
 import json
+import logging
 import re
 import sys
-import logging
 
 import click
 import jsonschema
-
 import utils
 
 
 @click.command()
-@click.argument('schema', type=click.File('r'), required=True)
-@click.argument('jsonfiles', type=click.Path(exists=True), required=True)
+@click.argument("schema", type=click.File("r"), required=True)
+@click.argument("jsonfiles", type=click.Path(exists=True), required=True)
 def validate(schema, jsonfiles):
     """Validate a JSON files against a JSON schema.
 
@@ -40,5 +38,6 @@ def validate(schema, jsonfiles):
     if not success:
         sys.exit(-1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     validate()
