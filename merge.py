@@ -5,7 +5,7 @@ from shapely.ops import cascaded_union
 import geoutils
 
 
-def merge_features(geojson, merge_field):
+def merge_features(geojson, merge_field, properties_key="properties"):
     """ Merge features based on matching properties
 
     :param geojson: A GeoJSON feature collection containing Polygons or MultiPolygons
@@ -22,7 +22,7 @@ def merge_features(geojson, merge_field):
         to_merge = [
             f
             for f in input_features
-            if f["properties"][merge_field] == feature["properties"][merge_field]
+            if f[properties_key][merge_field] == feature[properties_key][merge_field]
         ]
         if len(to_merge) == 0:
             output_features.append(feature)
@@ -52,13 +52,6 @@ def merge_features(geojson, merge_field):
             "properties": largest["properties"],
             "geometry": mapping(result),
         }
-        result_feature["bbox"] = geoutils.get_bbox_from_geojson_feature(result_feature)
-        result_feature["properties"]["acres"] = geoutils.get_area_acres(
-            feature["geometry"]
-        )
-        if "id" in result_feature["properties"]:
-            result_feature["id"] = result_feature["properties"]["id"]
-
         output_features.append(result_feature)
 
     output = {"type": "FeatureCollection", "features": output_features}

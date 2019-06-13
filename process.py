@@ -15,7 +15,6 @@ import adapters
 import geoutils
 import utils
 from filters import BasicFilterer
-from merge import merge_features
 
 
 @click.command()
@@ -117,6 +116,7 @@ def process(sources, output, force, force_summary):
                         filterer=filterer,
                         layer_name=source.get("layerName", None),
                         source_filename=source.get("filenameInZip", None),
+                        merge_on=source.get("mergeOn", None),
                     )
                 except IOError as e:
                     logging.error("Failed to read " + urlfile + " " + str(e))
@@ -132,9 +132,6 @@ def process(sources, output, force, force_summary):
                 if (len(geojson["features"])) == 0:
                     logging.error("Result contained no features for " + path)
                     continue
-
-                if "mergeOn" in source:
-                    geojson = merge_features(geojson, source["mergeOn"])
 
                 # generate properties
                 excluded_keys = [
