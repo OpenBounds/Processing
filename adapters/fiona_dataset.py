@@ -2,18 +2,20 @@ import logging
 from functools import partial
 
 import fiona
-import geoutils
 import pyproj
 import shapely.ops as ops
-import utils
 from fiona.transform import transform_geom
-from property_transformation import get_transformed_properties
-from property_transformation import PropertyMappingFailedException
 from shapely.geometry import mapping
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Polygon
 from shapely.geometry import shape
 from shapely.geometry.polygon import orient
+
+import geoutils
+import utils
+from merge import merge_features
+from property_transformation import get_transformed_properties
+from property_transformation import PropertyMappingFailedException
 
 
 def _force_geometry_2d(geometry):
@@ -73,7 +75,7 @@ def _fix_geometry(geometry):
     return geometry
 
 
-def read_fiona(source, prop_map, filterer=None):
+def read_fiona(source, prop_map, filterer=None, merge_on=None):
     """Process a fiona collection
     """
     collection = {
@@ -100,42 +102,44 @@ def read_fiona(source, prop_map, filterer=None):
             fixed_geometry = _fix_geometry(transformed_geometry)
             feature["geometry"] = _force_geometry_ccw(fixed_geometry)
 
+            if merge_on:
+                feature["original_properties"] = feature["properties"]
             feature["properties"] = get_transformed_properties(
                 feature["properties"], prop_map
             )
-            shapely_geometry = shape(feature["geometry"])
-            geom_aea = ops.transform(
-                partial(
-                    pyproj.transform,
-                    pyproj.Proj(init="EPSG:4326"),
-                    pyproj.Proj(
-                        proj="aea",
-                        lat1=shapely_geometry.bounds[1],
-                        lat2=shapely_geometry.bounds[3],
-                    ),
-                ),
-                shapely_geometry,
-            )
-
-            feature["properties"]["acres"] = round(geom_aea.area / 4046.8564224)
-            if "id" in feature["properties"]:
-                feature["id"] = feature["properties"]["id"]
-
-            feature["bbox"] = geoutils.get_bbox_from_geojson_feature(feature)
             collection["features"].append(feature)
         except PropertyMappingFailedException as e:
             logging.error(str(e) + ": " + str(feature["properties"]))
             failed_count += 1
         except Exception as e:
-            logging.error(str(e), "error processing feature: " + str(feature))
+            logging.exception("Error processing feature: " + str(feature))
             failed_count += 1
+
+    pre_merge_count = len(collection["features"])
+    if merge_on:
+        collection = merge_features(
+            collection, merge_on, properties_key="original_properties"
+        )
+
+    for feature in collection["features"]:
+        if "original_properties" in feature:
+            del feature["original_properties"]
+        feature["properties"]["acres"] = geoutils.get_area_acres(feature["geometry"])
+        feature["bbox"] = geoutils.get_bbox_from_geojson_feature(feature)
+        if "id" in feature["properties"]:
+            feature["id"] = feature["properties"]["id"]
 
     if len(collection["features"]) > 0:
         collection["bbox"] = geoutils.get_bbox_from_geojson(collection)
 
     logging.info(
-        "skipped %i features, kept %i features, errored %i features"
-        % (skipped_count, len(collection["features"]), failed_count)
+        "skipped %i features, kept %i features, merged %i features, errored %i features"
+        % (
+            skipped_count,
+            pre_merge_count,
+            pre_merge_count - len(collection["features"]),
+            failed_count,
+        )
     )
 
     return collection

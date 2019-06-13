@@ -3,13 +3,15 @@ import shutil
 import tempfile
 
 import fiona
+
+from . import fiona_dataset
 from property_transformation import get_transformed_properties
 from utils import get_compressed_file_wrapper
 
-from . import fiona_dataset
 
-
-def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
+def read(
+    fp, prop_map, filterer=None, source_filename=None, layer_name=None, merge_on=None
+):
     """Read shapefile.
 
     :param fp: file-like object
@@ -39,7 +41,9 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
 
     # Open the shapefile
     with fiona.open(os.path.join(unzip_dir, shp_name)) as source:
-        collection = fiona_dataset.read_fiona(source, prop_map, filterer)
+        collection = fiona_dataset.read_fiona(
+            source, prop_map, filterer, merge_on=merge_on
+        )
 
     shutil.rmtree(unzip_dir)
 

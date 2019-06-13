@@ -3,7 +3,6 @@ from functools import partial
 
 import mercantile
 import pyproj
-import utils
 from rtree import index
 from shapely.geometry import GeometryCollection
 from shapely.geometry import LineString
@@ -13,6 +12,8 @@ from shapely.geometry import Polygon
 from shapely.geometry import shape
 from shapely.ops import cascaded_union
 from shapely.ops import transform
+
+import utils
 
 logger = logging.getLogger("processing")
 
@@ -86,7 +87,7 @@ def polygon_from_bbox(bbox):
 def get_label_points(geojson, use_polylabel=True):
     """ Generate label points for polygon features 
 
-    :param geojson: A GeoJSON feature collection contain Polygons or MultiPolygons
+    :param geojson: A GeoJSON feature collection containing Polygons or MultiPolygons
     :returns: A new GeoJSON Feature collection containing Point features
     """
     if use_polylabel:
@@ -293,3 +294,25 @@ def get_bbox_from_geojson_feature_collection(geojson):
         max([b[2] for b in feature_bboxes]),
         max([b[3] for b in feature_bboxes]),
     )
+
+
+def get_area_acres(geometry):
+    """ Calculate area in acres for a GeoJSON geometry
+    :param geometry: A GeoJSON Polygon geometry
+    :returns: Area in acres
+    """
+
+    shapely_geometry = shape(geometry)
+    geom_aea = transform(
+        partial(
+            pyproj.transform,
+            pyproj.Proj(init="EPSG:4326"),
+            pyproj.Proj(
+                proj="aea",
+                lat1=shapely_geometry.bounds[1],
+                lat2=shapely_geometry.bounds[3],
+            ),
+        ),
+        shapely_geometry,
+    )
+    return round(geom_aea.area / 4046.8564224)

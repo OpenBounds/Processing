@@ -3,12 +3,14 @@ import shutil
 import tempfile
 
 import fiona
-from utils import get_compressed_file_wrapper
 
 from . import fiona_dataset
+from utils import get_compressed_file_wrapper
 
 
-def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
+def read(
+    fp, prop_map, filterer=None, source_filename=None, layer_name=None, merge_on=None
+):
     """Read geojson file.
 
     :param fp: file-like object
@@ -44,7 +46,9 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
 
     # Open the shapefile
     with fiona.open(file_to_process) as source:
-        collection = fiona_dataset.read_fiona(source, prop_map, filterer)
+        collection = fiona_dataset.read_fiona(
+            source, prop_map, filterer, merge_on=merge_on
+        )
 
     shutil.rmtree(unzip_dir)
 

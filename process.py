@@ -8,10 +8,11 @@ import zipfile
 from shutil import rmtree
 from urllib.parse import urlparse
 
-import adapters
 import click
-import geoutils
 import requests
+
+import adapters
+import geoutils
 import utils
 from filters import BasicFilterer
 
@@ -115,6 +116,7 @@ def process(sources, output, force, force_summary):
                         filterer=filterer,
                         layer_name=source.get("layerName", None),
                         source_filename=source.get("filenameInZip", None),
+                        merge_on=source.get("mergeOn", None),
                     )
                 except IOError as e:
                     logging.error("Failed to read " + urlfile + " " + str(e))
@@ -126,6 +128,7 @@ def process(sources, output, force, force_summary):
                     continue
                 finally:
                     os.remove(fp.name)
+
                 if (len(geojson["features"])) == 0:
                     logging.error("Result contained no features for " + path)
                     continue
