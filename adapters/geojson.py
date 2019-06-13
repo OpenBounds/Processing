@@ -1,11 +1,12 @@
 import os
-import tempfile
 import shutil
-
-from utils import get_compressed_file_wrapper
+import tempfile
 
 import fiona
+from utils import get_compressed_file_wrapper
+
 from . import fiona_dataset
+
 
 def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
     """Read geojson file.
@@ -18,11 +19,11 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
     root, ext = os.path.splitext(filename)
 
     unzip_dir = tempfile.mkdtemp()
-    
+
     if ext == ".geojson" or ext == ".json":
         file_to_process = fp.name
     else:
-    #search for a geojson file in the zip file, unzip if found
+        # search for a geojson file in the zip file, unzip if found
         shp_name = source_filename
         zipped_file = get_compressed_file_wrapper(fp.name)
 
@@ -41,7 +42,7 @@ def read(fp, prop_map, filterer=None, source_filename=None, layer_name=None):
         zipped_file.close()
         file_to_process = os.path.join(unzip_dir, shp_name)
 
-    #Open the shapefile
+    # Open the shapefile
     with fiona.open(file_to_process) as source:
         collection = fiona_dataset.read_fiona(source, prop_map, filterer)
 
