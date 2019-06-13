@@ -6,6 +6,7 @@ import sys
 
 import click
 import jsonschema
+
 import utils
 
 

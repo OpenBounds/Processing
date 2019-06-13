@@ -4,6 +4,7 @@ import re
 
 import click
 import jsonschema
+
 import utils
 
 

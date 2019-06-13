@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import boto3
 import click
+
 import utils
 
 upload_progress_interval = 100
