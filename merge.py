@@ -31,9 +31,10 @@ def merge_features(geojson, merge_field, properties_key="properties"):
         largest = None
         for f in to_merge:
             input_features.remove(f)
-            shapes.append(shape(f["geometry"]))
-            if largest is None or f.area > largest.area:
-                largest = f
+            f_geom = shape(f["geometry"])
+            shapes.append(f_geom)
+            if largest is None or f_geom.area > largest["geometry"].area:
+                largest = {"geometry": f_geom, "properties": f["properties"]}
 
         # Fix invalid geometries
         shapes = [s.buffer(0.0) if not s.is_valid else s for s in shapes]
