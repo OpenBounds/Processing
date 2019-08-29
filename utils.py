@@ -86,37 +86,6 @@ def download(url):
 
     fp = tempfile.NamedTemporaryFile("wb", suffix=extension, delete=False)
 
-    download_cache = os.getenv("DOWNLOAD_CACHE")
-    cache_path = None
-    if download_cache is not None:
-        cache_path = os.path.join(
-            download_cache, hashlib.sha224(url.encode()).hexdigest()
-        )
-        if os.path.exists(cache_path):
-            logging.info("Returning %s from local cache at %s" % (url, cache_path))
-            fp.close()
-            shutil.copy(cache_path, fp.name)
-            return fp
-
-    s3_cache_bucket = os.getenv("S3_CACHE_BUCKET")
-    s3_cache_key = None
-    if s3_cache_bucket is not None:
-        s3_cache_key = (
-            os.getenv("S3_CACHE_PREFIX", "") + hashlib.sha224(url.encode()).hexdigest()
-        )
-        s3 = boto3.client("s3")
-        try:
-            s3.download_fileobj(s3_cache_bucket, s3_cache_key, fp)
-            logging.info(
-                "Found %s in s3 cache at s3://%s/%s"
-                % (url, s3_cache_bucket, s3_cache_key)
-            )
-            fp.close()
-            return fp
-        except:
-            pass
-    #            logging.exception("error downloading cache file from s3")
-
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
         res = requests.get(url, stream=True, verify=False)
 
@@ -139,18 +108,6 @@ def download(url):
             fp.write(buffer)
 
     fp.close()
-
-    if cache_path:
-        if not os.path.exists(download_cache):
-            os.makedirs(download_cache)
-        shutil.copy(fp.name, cache_path)
-
-    if s3_cache_key:
-        logging.info(
-            "Putting %s to s3 cache at s3://%s/%s"
-            % (url, s3_cache_bucket, s3_cache_key)
-        )
-        s3.upload_file(fp.name, Bucket=s3_cache_bucket, Key=s3_cache_key)
 
     return fp
 
