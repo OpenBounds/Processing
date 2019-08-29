@@ -100,7 +100,7 @@ def download(url):
 
     s3_cache_bucket = os.getenv("S3_CACHE_BUCKET")
     s3_cache_key = None
-    if s3_cache_bucket is not None:
+    if s3_cache_bucket is not None and s3_cache_bucket not in url:
         s3_cache_key = (
             os.getenv("S3_CACHE_PREFIX", "") + hashlib.sha224(url.encode()).hexdigest()
         )
@@ -115,7 +115,6 @@ def download(url):
             return fp
         except:
             pass
-    #            logging.exception("error downloading cache file from s3")
 
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
         res = requests.get(url, stream=True, verify=False)
