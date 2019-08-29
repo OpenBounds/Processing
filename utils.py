@@ -86,6 +86,18 @@ def download(url):
 
     fp = tempfile.NamedTemporaryFile("wb", suffix=extension, delete=False)
 
+    download_cache = os.getenv("DOWNLOAD_CACHE")
+    cache_path = None
+    if download_cache is not None:
+        cache_path = os.path.join(
+            download_cache, hashlib.sha224(url.encode()).hexdigest()
+        )
+        if os.path.exists(cache_path):
+            logging.info("Returning %s from local cache at %s" % (url, cache_path))
+            fp.close()
+            shutil.copy(cache_path, fp.name)
+            return fp
+
     if parsed_url.scheme == "http" or parsed_url.scheme == "https":
         res = requests.get(url, stream=True, verify=False)
 
