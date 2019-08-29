@@ -121,6 +121,11 @@ def download(url):
 
     fp.close()
 
+    if cache_path:
+        if not os.path.exists(download_cache):
+            os.makedirs(download_cache)
+            shutil.copy(fp.name, cache_path)
+
     return fp
 
 
