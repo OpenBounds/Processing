@@ -158,13 +158,13 @@ def upload(mbtiles, s3_url, threads, extension, header, progress, debug):
     tile_count = tiles.len()
 
     key_template = key_prefix + "{z}/{x}/{y}" + extension
-    print("uploading tiles from %s to s3://%s/%s" % (mbtiles, bucket, key_template))
+    logging.info(f"uploading tiles from {mbtiles} to s3://{bucket}/{key_template}")
     pool = ThreadPool(threads)
     func = partial(upload_tile, s3, bucket, key_template, headers, progress=progress)
     pool.map(func, tiles)
 
     tilejson_key = "{}/index.json".format(key_prefix.strip("/"))
-    print("uploading tilejson to s3://%s/%s" % (bucket, tilejson_key))
+    logging.info(f"uploading tilejson to s3://{bucket}/{tilejson_key}")
     tilejson_data = get_tile_json(mbtiles, bucket, key_template)
     tilejson_json = json.dumps(tilejson_data, indent=4, sort_keys=True)
     s3.put_object(
